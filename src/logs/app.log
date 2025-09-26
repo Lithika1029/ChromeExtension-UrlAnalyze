@@ -1785,3 +1785,32 @@
 2025-09-25 22:16:14,190 - root - INFO - 🔍 Analyzing URL: https://git-scm.com/downloads/win (Request #3)
 2025-09-25 22:16:30,752 - root - INFO - ✅ Analysis complete: Appears Safe (confidence: 0.26, time: 16.56s)
 2025-09-25 22:16:30,757 - werkzeug - INFO - 127.0.0.1 - - [25/Sep/2025 22:16:30] "POST /analyze HTTP/1.1" 200 -
+2025-09-26 16:57:40,484 - modals.model_util - INFO - 🔍 Searching in modals\saved_models
+2025-09-26 16:57:40,485 - modals.model_util - INFO - 🔍 Searching in modals
+2025-09-26 16:57:40,486 - modals.model_util - INFO - Found potential model file: modals\model_util.py
+2025-09-26 16:57:40,486 - modals.model_util - INFO - Found potential model file: modals\__pycache__\model_util.cpython-313.pyc
+2025-09-26 16:57:40,487 - modals.model_util - INFO - 🔍 Searching in models
+2025-09-26 16:57:40,487 - modals.model_util - INFO - Found model files: ['comprehensive_model', 'features', 'generic_model', 'specific_model', 'scaler']
+2025-09-26 16:57:40,488 - modals.model_util - INFO - Attempting to load from modals/saved_models/
+2025-09-26 16:57:46,537 - modals.model_util - INFO - ✅ Loaded comprehensive model with 47 features
+2025-09-26 16:57:46,537 - root - INFO - ✅ Advanced phishing detector initialized!
+2025-09-26 16:57:46,537 - __main__ - INFO - ✅ Models and detector loaded successfully!
+2025-09-26 16:57:46,573 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.249.199.157:5000
+2025-09-26 16:57:46,573 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-26 16:58:02,070 - root - INFO - 🔍 Analyzing URL: https://www.google.com/search?q=how+to+publish+chrome+extension+for+free&oq=how+publish+chrom&gs_lcrp=EgZjaHJvbWUqCAgCEAAYFhgeMgYIABBFGDkyCAgBEAAYFhgeMggIAhAAGBYYHjIKCAMQABgKGBYYHjIICAQQABgWGB4yCAgFEAAYFhgeMg0IBhAAGIYDGIAEGIoFMgoIBxAAGIAEGKIEMgoICBAAGIAEGKIE0gEJMTMzNzFqMGo3qAIAsAIA&sourceid=chrome&ie=UTF-8 (Request #1)
+2025-09-26 16:58:08,135 - root - INFO - ✅ Analysis complete: Appears Safe (confidence: 0.34, time: 6.07s)
+2025-09-26 16:58:08,136 - werkzeug - INFO - 127.0.0.1 - - [26/Sep/2025 16:58:08] "POST /analyze HTTP/1.1" 200 -
+2025-09-26 16:58:18,393 - root - INFO - 🔍 Analyzing URL: https://chat.deepseek.com/a/chat/s/5f4105d2-1cdf-4b74-aba1-cfebfcd51b0d (Request #2)
+2025-09-26 16:58:24,710 - root - INFO - ✅ Analysis complete: Safe (confidence: 0.03, time: 6.32s)
+2025-09-26 16:58:24,711 - werkzeug - INFO - 127.0.0.1 - - [26/Sep/2025 16:58:24] "POST /analyze HTTP/1.1" 200 -
+2025-09-26 16:59:33,348 - root - INFO - 🔍 Analyzing URL: https://dashboard.render.com/web/new?newUser=true (Request #3)
+2025-09-26 16:59:38,333 - root - INFO - ✅ Analysis complete: Appears Safe (confidence: 0.22, time: 4.99s)
+2025-09-26 16:59:38,334 - werkzeug - INFO - 127.0.0.1 - - [26/Sep/2025 16:59:38] "POST /analyze HTTP/1.1" 200 -
+2025-09-26 16:59:48,558 - werkzeug - INFO - 127.0.0.1 - - [26/Sep/2025 16:59:48] "POST /analyze HTTP/1.1" 200 -
+2025-09-26 17:01:33,443 - werkzeug - INFO - 127.0.0.1 - - [26/Sep/2025 17:01:33] "POST /analyze HTTP/1.1" 200 -
+2025-09-26 17:01:47,803 - werkzeug - INFO - 127.0.0.1 - - [26/Sep/2025 17:01:47] "POST /analyze HTTP/1.1" 200 -
+2025-09-26 17:02:26,548 - root - INFO - ✅ Advanced phishing detector initialized!
+2025-09-26 17:02:26,548 - __main__ - INFO - ✅ Models and detector loaded successfully!

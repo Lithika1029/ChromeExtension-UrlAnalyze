@@ -52,37 +52,6 @@ def ensure_directories():
         os.makedirs(directory, exist_ok=True)
         print(f"📁 Ensured directory: {directory}")
 
-def load_models():
-    """Initialize the phishing detector - called from run.py"""
-    global phishing_detector
-    
-    print("🎯 INITIALIZING ADVANCED PHISHING DETECTION SYSTEM")
-    print(f"📁 Environment: {Config.ENVIRONMENT}")
-    print(f"🔧 Debug Mode: {Config.DEBUG}")
-    
-    # Ensure directories exist
-    ensure_directories()
-    
-    # Set up logging
-    logging.basicConfig(
-        level=getattr(logging, Config.LOG_LEVEL.upper(), logging.INFO),
-        format=Config.LOGGING_CONFIG['format'],
-        handlers=[
-            logging.FileHandler(Config.LOGGING_CONFIG['file'], encoding='utf-8'),
-            logging.StreamHandler(stream=sys.stdout)
-        ]
-    )
-    
-    logger = logging.getLogger(__name__)
-    
-    try:
-        # Initialize the detector
-        phishing_detector = AdvancedPhishingDetector()
-        logger.info("✅ Models and detector loaded successfully!")
-        return True
-    except Exception as e:
-        logger.error(f"❌ Failed to load models: {e}")
-        return False
 
 class AdvancedPhishingDetector:
     def __init__(self):
@@ -792,6 +761,41 @@ class AdvancedPhishingDetector:
             
             return {k: v for k, v in categorized.items() if v}
 
+
+
+def load_models():
+    """Initialize the phishing detector - called from run.py"""
+    global phishing_detector
+    
+    print("🎯 INITIALIZING ADVANCED PHISHING DETECTION SYSTEM")
+    print(f"📁 Environment: {Config.ENVIRONMENT}")
+    print(f"🔧 Debug Mode: {Config.DEBUG}")
+    
+    # Ensure directories exist
+    ensure_directories()
+    
+    # Set up logging
+    logging.basicConfig(
+        level=getattr(logging, Config.LOG_LEVEL.upper(), logging.INFO),
+        format=Config.LOGGING_CONFIG['format'],
+        handlers=[
+            logging.FileHandler(Config.LOGGING_CONFIG['file'], encoding='utf-8'),
+            logging.StreamHandler(stream=sys.stdout)
+        ]
+    )
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Initialize the detector
+        phishing_detector = AdvancedPhishingDetector()
+        logger.info("✅ Models and detector loaded successfully!")
+        return True
+    except Exception as e:
+        logger.error(f"❌ Failed to load models: {e}")
+        return False
+
+
 # Flask Routes
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -836,12 +840,10 @@ def health_check():
 
 @app.route('/analyze', methods=['POST'])
 def analyze_url_endpoint():
-    """Analyze a URL for phishing"""
+    global phishing_detector
     if phishing_detector is None:
-        return jsonify({
-            "error": "Service not ready - models still loading",
-            "timestamp": datetime.now().isoformat()
-        }), 503
+        if not load_models():
+            return jsonify({"error": "Models failed to load"}), 503
     
     try:
         data = request.get_json()
@@ -917,6 +919,17 @@ def handle_exception(error):
     }), 500
 
 # Make load_models available for import
+# Add this after all your code, before the if __name__ block
+def create_app():
+    """Create Flask application for WSGI servers"""
+    if load_models():
+        return app
+    else:
+        raise RuntimeError("Failed to load models")
+
+# For WSGI servers like gunicorn
+application = create_app()
+
 if __name__ == "__main__":
     if load_models():
         print(f"🚀 Starting server on {Config.HOST}:{Config.PORT}")
@@ -928,3 +941,4 @@ if __name__ == "__main__":
         )
     else:
         print("❌ Failed to load models - cannot start server")
+        
