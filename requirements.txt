@@ -1,0 +1,38 @@
+# Core Flask & Web
+flask==2.3.3
+flask-cors==4.0.0
+flask-limiter==3.5.0
+gunicorn==21.2.0
+
+# HTTP Requests & Networking
+requests==2.31.0
+urllib3==2.0.7
+
+# Machine Learning & Data Science
+scikit-learn==1.3.0
+numpy==1.24.3
+pandas==2.0.3
+scipy==1.10.1
+joblib==1.3.2
+shap==0.42.1
+
+# URL & Domain Analysis
+tldextract==3.4.4
+python-whois==0.8.0
+beautifulsoup4==4.12.2
+
+# SSL & Security
+pyopenssl==23.2.0
+cryptography==41.0.7
+
+# DNS & Network Analysis
+dnspython==2.4.2
+
+# Utilities & System
+python-dotenv==1.0.0
+click==8.1.7
+Werkzeug==2.3.7
+itsdangerous==2.1.2
+
+# Date/Time
+python-dateutil==2.8.2
