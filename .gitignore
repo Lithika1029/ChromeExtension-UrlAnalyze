@@ -1,0 +1,85 @@
+# ==========================
+# Python
+# ==========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+.eggs/
+*.log
+*.pot
+*.mo
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints
+
+# PyInstaller
+*.spec
+dist/
+build/
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# ==========================
+# Node.js (for Chrome extension frontend if using npm/yarn)
+# ==========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# ==========================
+# OS / Editor specific
+# ==========================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.iml
+
+# ==========================
+# Chrome Extension build
+# ==========================
+/dist
+/build
+*.crx
+*.pem
+*.zip
+
+# ==========================
+# Security
+# ==========================
+# Never commit credentials, API keys, or environment config
+*.env
+.env.*
+secrets.json
+config.json
+credentials.json
