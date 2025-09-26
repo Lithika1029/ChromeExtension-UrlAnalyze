@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>⛔ Dangerous Website Blocked</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8d7da;
+      color: #721c24;
+      text-align: center;
+      padding: 50px;
+    }
+    .box {
+      border: 2px solid #f5c6cb;
+      border-radius: 10px;
+      background: #fff;
+      display: inline-block;
+      padding: 30px;
+      max-width: 600px;
+    }
+    .site {
+      font-weight: bold;
+      color: #c82333;
+    }
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    #backBtn {
+      background-color: #721c24;
+      color: white;
+    }
+    #continueBtn {
+      background-color: #c82333;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>⛔ Dangerous Website</h1>
+    <p>
+      The site <span id="site" class="site"></span> has been flagged as dangerous.<br>
+      Access is strongly discouraged.
+    </p>
+    <button id="backBtn">🔙 Go Back</button>
+    <button id="continueBtn">⚠️ Continue Anyway</button>
+  </div>
+
+  <!-- External JS only -->
+  <script src="warningDanger.js"></script>
+</body>
+</html>

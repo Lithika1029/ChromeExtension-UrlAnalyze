@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>URL Guard - Security Check</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <div class="logo">
+          <img src="icons/default48.png" alt="URL Guard Logo" />
+        </div>
+        <h1>URL Guard</h1>
+      </div>
+      <div class="header-line"></div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Status Card -->
+      <div class="status-card">
+        <div class="status-header">
+          <h2 id="status-title">Analyzing URL</h2>
+          <div id="risk-banner" class="status-badge">SCANNING...</div>
+        </div>
+        <div class="url-text" id="url">Waiting for page load...</div>
+      </div>
+
+      <!-- Stats Section -->
+      <div class="stats-section">
+        <div class="stat-card">
+          <span class="stat-value" id="risk">—</span>
+          <span class="stat-label">Risk Score</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="prediction">—</span>
+          <span class="stat-label">Prediction</span>
+        </div>
+
+      <!-- Reason Card -->
+      <div class="reason-card">
+        <span class="reason-label">Reason</span>
+        <div class="reason-text" id="reason">Analyzing security factors...</div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <button class="action-button" id="export-report-btn">Export Report</button>
+        <button class="action-button primary" id="rescan-btn">Rescan</button>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>URL Guard • Powered by advanced security</p>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
