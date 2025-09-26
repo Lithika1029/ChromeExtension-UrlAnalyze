@@ -1,9 +1,5 @@
 # main.py
-import pandas as pd
-import numpy as np
-import joblib
-import json
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 import re
@@ -12,8 +8,6 @@ import tldextract
 import time
 import logging
 from datetime import datetime
-import io
-import csv
 import sys
 import math
 from collections import Counter
