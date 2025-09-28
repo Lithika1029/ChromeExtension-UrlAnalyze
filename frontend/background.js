@@ -1,35 +1,34 @@
-const API_URL = "http://127.0.0.1:5000/analyze";
+const API_URL = "https://5391fa77-5abb-4491-8f37-27eeaa781524-00-rm8ys4z76cle.pike.replit.dev/analyze";
 const FETCH_TIMEOUT = 20000; // 20 seconds
 const cache = new Map();
 
 // ====== Risk Level Helpers ======
 function normalizeRiskLevel(prediction) {
-  if (!prediction) return "unknown";
-  prediction = prediction.toString().toLowerCase();
-  if (prediction.includes("safe") || prediction.includes("low") || prediction.includes("secure")) return "safe";
-  if (prediction.includes("suspicious") || prediction.includes("medium") || prediction.includes("caution")) return "suspicious";
-  if (prediction.includes("malicious") || prediction.includes("high") || prediction.includes("dangerous") || prediction.includes("unsafe") || prediction.includes("phishing")) return "malicious";
-  return "unknown";
+    if (!prediction) return "unknown";
+    prediction = prediction.toString().toLowerCase();
+    if (prediction.includes("safe") || prediction.includes("low") || prediction.includes("secure")) return "safe";
+    if (prediction.includes("suspicious") || prediction.includes("medium") || prediction.includes("caution")) return "suspicious";
+    if (prediction.includes("malicious") || prediction.includes("high") || prediction.includes("dangerous") || prediction.includes("unsafe") || prediction.includes("phishing")) return "malicious";
+    return "unknown";
 }
 
 // ====== Update Toolbar Icon ======
 function updateIcon(tabId, riskLevel) {
-  let path = "icons/default32.png";
-  let title = "URL Analysis: Unknown";
+    let path = "icons/default32.png";
+    let title = "URL Analysis: Unknown";
 
-  if (riskLevel === "safe") {
-    path = "icons/green32.png";
-    title = "✅ Safe Website";
-  } else if (riskLevel === "suspicious") {
-    path = "icons/yellow32.png";
-    title = "⚠️ Suspicious Website";
-  } else if (riskLevel === "malicious") {
-    path = "icons/red32.png";
-    title = "❌ Dangerous Website";
-  }
-
-  chrome.action.setIcon({ tabId, path });
-  chrome.action.setTitle({ tabId, title });
+    if (riskLevel === "safe") {
+        path = "icons/green32.png";
+        title = "✅ Safe Website";
+    } else if (riskLevel === "suspicious") {
+        path = "icons/yellow32.png";
+        title = "⚠️ Suspicious Website";
+    } else if (riskLevel === "malicious") {
+        path = "icons/red32.png";
+        title = "❌ Dangerous Website";
+    }
+    chrome.action.setIcon({ tabId, path });
+    chrome.action.setTitle({ tabId, title });
 }
 
 // ====== Show Notification ======
@@ -52,7 +51,16 @@ function showNotification(riskLevel, url) {
 }
 
 // ====== Warning Page Redirect ======
-function showWarning(tabId, riskLevel, url) {
+async function showWarning(tabId, riskLevel, url) {
+    // Check if we should show warning (user might be returning from warning)
+    const shouldShow = await shouldShowWarning(tabId);
+    console.log("[Background] Should show warning for", url, ":", shouldShow);
+    
+    if (!shouldShow) {
+        console.log("[Background] Skipping warning due to bypass flags");
+        return;
+    }
+
     let warningPage = "";
     if (riskLevel === "suspicious") warningPage = chrome.runtime.getURL("warningCaution.html");
     if (riskLevel === "malicious") warningPage = chrome.runtime.getURL("warningDanger.html");
@@ -127,9 +135,11 @@ async function shouldAnalyzeUrl(tabId, url) {
 async function shouldShowWarning(tabId) {
   try {
     const response = await chrome.tabs.sendMessage(tabId, { type: "shouldAnalyze" });
+    console.log("[Background] Should show warning check:", response);
     return !(response && response.skipAnalysis);
   } catch (error) {
     // If content script isn't available, proceed with warning
+    console.debug("[Background] Content script not available for warning check, showing warning");
     return true;
   }
 }
@@ -148,19 +158,25 @@ async function analyzeUrl(tabId, url) {
         return;
     }
 
-  // 1. Check cache first
+    // 1. Check cache first
     if (cache.has(url)) {
         const cached = cache.get(url);
         const riskLevel = normalizeRiskLevel(cached.prediction);
         
+        console.log("[Background] Using cached result:", riskLevel);
         updateIcon(tabId, riskLevel);
         showNotification(riskLevel, url);
-        showWarning(tabId, riskLevel, url);
+        
+        // Only show warning if needed (for suspicious/malicious)
+        if (riskLevel === "suspicious" || riskLevel === "malicious") {
+            showWarning(tabId, riskLevel, url);
+        }
+        
         sendResultToPopup(cached);
         return;
     }
 
-  // 2. Fetch from API
+    // 2. Fetch from API
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
@@ -202,7 +218,12 @@ async function analyzeUrl(tabId, url) {
         const riskLevel = normalizeRiskLevel(result.prediction);
         updateIcon(tabId, riskLevel);
         showNotification(riskLevel, url);
-        showWarning(tabId, riskLevel, url);
+        
+        // Only show warning if needed AND if we should show warnings
+        if (riskLevel === "suspicious" || riskLevel === "malicious") {
+            await showWarning(tabId, riskLevel, url);
+        }
+        
         sendResultToPopup(result);
 
     } catch (err) {
@@ -224,7 +245,6 @@ async function analyzeUrl(tabId, url) {
     }
 }
 
-
 // ====== Message Listener ======
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "manualRescan") {
@@ -243,6 +263,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     });
     
     sendResponse({ status: "continuing" });
+  }
+  else if (msg.type === "skipAnalysis") {
+    console.log("[Background] Skip analysis requested for URL");
+    // This can be used by content script to explicitly skip analysis
+    sendResponse({ status: "skipped" });
   }
   return true; // Keep message channel open for async response
 });

@@ -21,8 +21,13 @@
   },
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*"],
-      "js": ["content.js"],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_start"
     }
   ],
@@ -34,8 +39,7 @@
     "webNavigation"
   ],
   "host_permissions": [
-    "http://127.0.0.1:5000/*",
-    "https://your-backend.example.com/*"
+    "https://5391fa77-5abb-4491-8f37-27eeaa781524-00-rm8ys4z76cle.pike.replit.dev/*"
   ],
   "web_accessible_resources": [
     {
@@ -46,7 +50,9 @@
         "warningDanger.js",
         "icons/*"
       ],
-      "matches": ["<all_urls>"]
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ]
 }
