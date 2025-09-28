@@ -151,9 +151,43 @@ class AdvancedPhishingDetector:
                 extraction_times['typosquatting_analysis'] = 0
         
         return features, module_status, extraction_times
+
+    def is_legitimate_subdomain(self, domain):
+        """
+        Check if domain is a legitimate subdomain of a popular domain
+        """
+        LEGITIMATE_SUBDOMAINS = {
+            'google': ['support', 'docs', 'drive', 'mail', 'maps', 'play', 'news', 'photos', 'accounts', 'myaccount', 'chrome', 'firebase', 'cloud'],
+            'facebook': ['business', 'developers', 'about', 'help', 'newsroom'],
+            'amazon': ['aws', 'kindle', 'prime', 'fresh', 'sellercentral', 'advertising'],
+            'microsoft': ['support', 'docs', 'learn', 'azure', 'technet', 'msdn'],
+            'github': ['gist', 'help', 'education', 'enterprise'],
+            'paypal': ['developer', 'business', 'manager'],
+            'apple': ['support', 'developer', 'apps', 'books'],
+            'youtube': ['studio', 'tv', 'kids'],
+            'twitter': ['developer', 'business'],
+            'instagram': ['developer', 'business'],
+            'linkedin': ['learning', 'business', 'developer']
+        }
+        
+        extracted = tldextract.extract(domain)
+        main_domain = extracted.domain.lower()
+        subdomain_parts = extracted.subdomain.lower().split('.') if extracted.subdomain else []
+        
+        if main_domain in LEGITIMATE_SUBDOMAINS:
+            # If no subdomain, it's the main domain - legitimate
+            if not extracted.subdomain:
+                return True
+            
+            # Check if any subdomain part is in legitimate list
+            for part in subdomain_parts:
+                if part in LEGITIMATE_SUBDOMAINS[main_domain]:
+                    return True
+        
+        return False
     
     def rule_based_analysis(self, url, features):
-        """Enhanced rule-based analysis with comprehensive typosquatting detection"""
+        """Enhanced rule-based analysis with improved typosquatting detection"""
         score = 0.0
         rules_triggered = []
         rule_details = []
@@ -179,14 +213,14 @@ class AdvancedPhishingDetector:
             'many_name_servers_low': 25,
             'privacy_whois': 10,
             'server_header_full': 2,
-            # Typosquatting weights
-            'homoglyph_detected': 30,
-            'typosquatting_detected': 45,
-            'high_similarity': 20,
-            'unusual_length': 10,
-            'character_replacement': 25,
-            'addition_technique': 15,
-            'omission_technique': 20
+            # Typosquatting weights - adjusted to be more conservative
+            'homoglyph_detected': 25,
+            'typosquatting_detected': 35,  # Reduced from 45
+            'high_similarity': 15,  # Reduced from 20
+            'unusual_length': 8,   # Reduced from 10
+            'character_replacement': 20,  # Reduced from 25
+            'addition_technique': 12,  # Reduced from 15
+            'omission_technique': 15   # Reduced from 20
         }
 
         # Helper functions
@@ -345,7 +379,7 @@ class AdvancedPhishingDetector:
             rules_triggered.append("Suspicious TLD")
             rule_details.append("TLD is commonly abused in phishing")
 
-        # Trusted domain phishing boost
+        # Trusted domain phishing boost - IMPROVED LOGIC
         trusted_domains = [
             "google.com","facebook.com","amazon.com","apple.com","microsoft.com",
             "netflix.com","twitter.com","instagram.com","linkedin.com","paypal.com",
@@ -358,21 +392,26 @@ class AdvancedPhishingDetector:
             ext = tldextract.extract(url)
             full_domain = f"{ext.domain}.{ext.suffix}"
             
-            # Check if there are suspicious keywords in the path
-            parsed_url = urlparse(url)
-            path_lower = parsed_url.path.lower()
-            
-            suspicious_keywords = [
-                'login','signin','secure','account','update','banking','verify',
-                'confirm','pay','wallet','payment','password','reset','recover'
-            ]
-            
-            has_suspicious_path = any(keyword in path_lower for keyword in suspicious_keywords)
-            
-            if full_domain in trusted_domains and (is_shortened(url) or has_suspicious_path):
-                score += 25
-                rules_triggered.append("Phishing pattern on trusted domain")
-                rule_details.append("Trusted domain with suspicious patterns detected")
+            # Check if this is a legitimate subdomain first
+            if self.is_legitimate_subdomain(f"{ext.subdomain}.{full_domain}" if ext.subdomain else full_domain):
+                # Don't penalize legitimate subdomains
+                pass
+            elif full_domain in trusted_domains:
+                # Only apply penalty if there are suspicious patterns on trusted domains
+                parsed_url = urlparse(url)
+                path_lower = parsed_url.path.lower()
+                
+                suspicious_keywords = [
+                    'login','signin','secure','account','update','banking','verify',
+                    'confirm','pay','wallet','payment','password','reset','recover'
+                ]
+                
+                has_suspicious_path = any(keyword in path_lower for keyword in suspicious_keywords)
+                
+                if is_shortened(url) or has_suspicious_path:
+                    score += 25
+                    rules_triggered.append("Phishing pattern on trusted domain")
+                    rule_details.append("Trusted domain with suspicious patterns detected")
         except Exception as e:
             logging.debug(f"Trusted domain check failed: {e}")
 
@@ -462,78 +501,66 @@ class AdvancedPhishingDetector:
             score += W['server_header_full']
             rule_details.append("Server header present (info leakage)")
 
-        # Enhanced Typosquatting and Homoglyph detection
-        homoglyph_detected = features.get('typo_homoglyph_detected', 0)
+        # IMPROVED: Enhanced Typosquatting and Homoglyph detection
         typosquatting_detected = features.get('typo_typosquatting_detected', 0)
+        homoglyph_detected = features.get('typo_homoglyph_detected', 0)
         similarity_score = features.get('typo_suspicious_similarity', 0.0)
         targeted_domain = features.get('typo_targeted_legitimate_domain', 'none')
         techniques_used = features.get('typo_techniques_used', [])
+        typosquatting_reason = features.get('typo_reason', '')
         
-        if homoglyph_detected == 1:
-            homoglyph_count = features.get('typo_homoglyph_count', 0)
-            score += W['homoglyph_detected']
-            rules_triggered.append("Homoglyph characters detected")
-            rule_details.append(f"Found {homoglyph_count} homoglyph characters")
-        
-        if typosquatting_detected == 1:
-            confidence = features.get('typo_typosquatting_confidence', 0.0)
-            score += W['typosquatting_detected']
-            
-            if targeted_domain != 'none':
-                rules_triggered.append(f"Typosquatting detected targeting {targeted_domain}")
-                rule_details.append(f"Confidence: {confidence:.2f}, Techniques: {len(techniques_used)}")
-            else:
-                rules_triggered.append("Typosquatting detected")
-                rule_details.append(f"Confidence: {confidence:.2f}")
-            
-            # Analyze specific techniques
-            for technique in techniques_used:
-                if 'replacement' in technique.lower():
-                    score += W['character_replacement']
-                elif 'addition' in technique.lower():
-                    score += W['addition_technique']
-                elif 'omission' in technique.lower() or 'transposition' in technique.lower():
-                    score += W['omission_technique']
-            
-            # Add technique details
-            for technique in techniques_used[:3]:
-                rule_details.append(f"- {technique}")
-        
-        if similarity_score > 0.7:
-            closest_domain = features.get('typo_targeted_legitimate_domain', 'unknown')
-            score += W['high_similarity']
-            rules_triggered.append("High similarity to legitimate domain")
-            rule_details.append(f"Similarity: {similarity_score:.2f} to {closest_domain}")
-        
-        if features.get('typo_unusual_domain_length', 0) == 1:
-            domain_len = features.get('typo_domain_length', 0)
-            avg_len = features.get('typo_avg_popular_domain_length', 0)
-            score += W['unusual_length']
-            rules_triggered.append("Unusual domain length")
-            rule_details.append(f"Domain length: {domain_len} (avg: {avg_len:.1f})")
-
-        # Character replacement detection for common patterns
-        common_replacements = [
-            ('o', '0'), ('i', '1'), ('l', '1'), ('s', '5'), ('e', '3'),
-            ('a', '4'), ('t', '7'), ('g', '9'), ('m', 'rn'), ('w', 'vv')
-        ]
-        
+        # Check if this is a legitimate subdomain before applying typosquatting penalties
         try:
             ext = tldextract.extract(url)
-            domain_name = ext.domain.lower()
+            full_domain = f"{ext.subdomain}.{ext.domain}.{ext.suffix}" if ext.subdomain else f"{ext.domain}.{ext.suffix}"
+            is_legitimate = self.is_legitimate_subdomain(full_domain)
+        except:
+            is_legitimate = False
+        
+        # Only apply typosquatting penalties if it's NOT a legitimate subdomain
+        if not is_legitimate:
+            if homoglyph_detected == 1:
+                homoglyph_count = features.get('typo_homoglyph_count', 0)
+                score += W['homoglyph_detected']
+                rules_triggered.append("Homoglyph characters detected")
+                rule_details.append(f"Found {homoglyph_count} homoglyph characters")
             
-            for original, replacement in common_replacements:
-                if replacement in domain_name and original not in domain_name:
-                    # Check if this makes it similar to a popular domain
-                    for popular_domain in trusted_domains:
-                        popular_name = popular_domain.split('.')[0].lower()
-                        if original in popular_name and similarity_ratio(domain_name, popular_name) > 0.7:
-                            score += W['character_replacement']
-                            rules_triggered.append(f"Character replacement detected: '{replacement}' for '{original}'")
-                            rule_details.append(f"Potential mimic of '{popular_domain}'")
-                            break
-        except Exception:
-            pass
+            if typosquatting_detected == 1:
+                confidence = features.get('typo_typosquatting_confidence', 0.0)
+                score += W['typosquatting_detected']
+                
+                if targeted_domain != 'none':
+                    rules_triggered.append(f"Typosquatting detected targeting {targeted_domain}")
+                    rule_details.append(f"Confidence: {confidence:.2f}, Techniques: {len(techniques_used)}")
+                else:
+                    rules_triggered.append("Typosquatting detected")
+                    rule_details.append(f"Confidence: {confidence:.2f}")
+                
+                # Analyze specific techniques
+                for technique in techniques_used:
+                    if 'replacement' in technique.lower():
+                        score += W['character_replacement']
+                    elif 'addition' in technique.lower():
+                        score += W['addition_technique']
+                    elif 'omission' in technique.lower() or 'transposition' in technique.lower():
+                        score += W['omission_technique']
+                
+                # Add technique details
+                for technique in techniques_used[:3]:
+                    rule_details.append(f"- {technique}")
+            
+            if similarity_score > 0.7 and not is_legitimate:
+                closest_domain = features.get('typo_targeted_legitimate_domain', 'unknown')
+                score += W['high_similarity']
+                rules_triggered.append("High similarity to legitimate domain")
+                rule_details.append(f"Similarity: {similarity_score:.2f} to {closest_domain}")
+            
+            if features.get('typo_unusual_domain_length', 0) == 1 and not is_legitimate:
+                domain_len = features.get('typo_domain_length', 0)
+                avg_len = features.get('typo_avg_popular_domain_length', 0)
+                score += W['unusual_length']
+                rules_triggered.append("Unusual domain length")
+                rule_details.append(f"Domain length: {domain_len} (avg: {avg_len:.1f})")
 
         # Normalize score
         max_score = 250.0  # Increased to account for enhanced typosquatting detection
@@ -549,212 +576,211 @@ class AdvancedPhishingDetector:
         }
         
     def calculate_threat_level(self, confidence):
-            """Calculate threat level based on confidence score"""
-            if confidence >= self.risk_thresholds['high']:
-                return "HIGH", "🔴", "Phishing"
-            elif confidence >= self.risk_thresholds['medium']:
-                return "MEDIUM", "🟡", "Suspicious"
-            elif confidence >= self.risk_thresholds['low']:
-                return "LOW", "🟢", "Appears Safe"
-            else:
-                return "VERY_LOW", "⚪", "Safe"
-        
+        """Calculate threat level based on confidence score"""
+        if confidence >= self.risk_thresholds['high']:
+            return "HIGH", "🔴", "Phishing"
+        elif confidence >= self.risk_thresholds['medium']:
+            return "MEDIUM", "🟡", "Suspicious"
+        elif confidence >= self.risk_thresholds['low']:
+            return "LOW", "🟢", "Appears Safe"
+        else:
+            return "VERY_LOW", "⚪", "Safe"
+    
     def analyze_url(self, url):
-            """Complete URL analysis combining all modules and ML"""
-            start_time = time.time()
-            self.request_count += 1
+        """Complete URL analysis combining all modules and ML"""
+        start_time = time.time()
+        self.request_count += 1
+        
+        try:
+            logging.info(f"🔍 Analyzing URL: {url} (Request #{self.request_count})")
             
-            try:
-                logging.info(f"🔍 Analyzing URL: {url} (Request #{self.request_count})")
-                
-                # Extract comprehensive features
-                features, module_status, extraction_times = self.extract_comprehensive_features(url)
-                
-                # ML prediction
-                ml_result = self.model_manager.predict(features)
-                
-                # Rule-based analysis
-                rule_result = self.rule_based_analysis(url, features)
-                
-                # Combine results using configured weights
-                ml_prob = ml_result.get('probability', 0)
-                rule_prob = rule_result.get('rule_probability', 0)
-                
-                combined_prob = (ml_prob * Config.ML_WEIGHT + 
-                            rule_prob * Config.HEURISTIC_WEIGHT)
-                
-                is_phishing = combined_prob > 0.5
-                threat_level, risk_color, status_text = self.calculate_threat_level(combined_prob)
-                
-                # Prepare explanation
-                explanation = self.generate_explanation(combined_prob, status_text, features, rule_result, url)
-                
-                # Organize features by category
-                categorized_features = self.categorize_features(features)
-                
-                # Get probabilities array
-                probabilities = [1 - combined_prob, combined_prob]
-                
-                # Prepare final result
-                total_time = round(time.time() - start_time, 2)
-                
-                result = {
-                    "url": url,
-                    "timestamp": datetime.now().isoformat(),
-                    "prediction": status_text,
-                    "predicted_class": 0 if not is_phishing else 1,
-                    "risk_score": round(combined_prob, 4),
-                    "probabilities": [round(prob, 6) for prob in probabilities],
-                    "explanation": explanation,
-                    "features": categorized_features
-                }
-                
-                logging.info(f"✅ Analysis complete: {status_text} (confidence: {combined_prob:.2f}, time: {total_time}s)")
-                
-                return result
-                
-            except Exception as e:
-                logging.error(f"❌ Analysis error for {url}: {e}")
-                return {
-                    "url": url,
-                    "timestamp": datetime.now().isoformat(),
-                    "prediction": "Error",
-                    "predicted_class": None,
-                    "risk_score": 0.0,
-                    "probabilities": [1.0, 0.0],
-                    "explanation": [f"Analysis failed: {str(e)}"],
-                    "features": {},
-                    "error": f"Analysis failed: {str(e)}"
-                }
-
-    def generate_explanation(self, risk_score, prediction, features, rule_result, url):
-            """Generate human-readable explanation of the analysis"""
-            explanation = []
+            # Extract comprehensive features
+            features, module_status, extraction_times = self.extract_comprehensive_features(url)
             
-            # Risk score and prediction
-            explanation.append(f"Risk Score: {risk_score:.2f}")
-            explanation.append(f"Prediction: {prediction}")
-            explanation.append("Key factors influencing prediction:")
+            # ML prediction
+            ml_result = self.model_manager.predict(features)
             
-            # Positive factors (safe indicators)
-            positive_factors = []
+            # Rule-based analysis
+            rule_result = self.rule_based_analysis(url, features)
             
-            # SSL factors
-            if features.get('ssl_has_ssl', 0) == 1:
-                if features.get('ssl_ssl_cert_expired', 0) == 0:
-                    positive_factors.append("Valid SSL certificate")
-                else:
-                    explanation.append("- Expired SSL certificate (suspicious)")
+            # Combine results using configured weights
+            ml_prob = ml_result.get('probability', 0)
+            rule_prob = rule_result.get('rule_probability', 0)
             
-            # DNS factors
-            if features.get('dns_has_dns_record', 0) == 1:
-                positive_factors.append("DNS record exists")
-            else:
-                explanation.append("- No DNS record found (suspicious)")
+            combined_prob = (ml_prob * Config.ML_WEIGHT + 
+                        rule_prob * Config.HEURISTIC_WEIGHT)
             
-            # Domain age
-            domain_age = features.get('meta_domain_age_days', 0)
-            if domain_age > 365:
-                positive_factors.append(f"Established domain ({domain_age} days old)")
-            elif domain_age > 0:
-                explanation.append(f"- Relatively new domain ({domain_age} days)")
+            is_phishing = combined_prob > 0.5
+            threat_level, risk_color, status_text = self.calculate_threat_level(combined_prob)
             
-            # Security headers
-            if features.get('header_has_x_frame_options', 0) == 1:
-                positive_factors.append("Security headers present")
-            else:
-                explanation.append("- Missing security headers")
+            # Prepare explanation
+            explanation = self.generate_explanation(combined_prob, status_text, features, rule_result, url)
             
-            # URL structure
-            url_len = len(features.get('url_url', ''))
-            if url_len < 100:
-                positive_factors.append("Reasonable URL length")
-            else:
-                explanation.append(f"- Long URL ({url_len} characters)")
+            # Organize features by category
+            categorized_features = self.categorize_features(features)
             
-            # Enhanced Typosquatting findings
-            typosquatting_detected = features.get('typo_typosquatting_detected', 0)
-            homoglyph_detected = features.get('typo_homoglyph_detected', 0)
-            targeted_domain = features.get('typo_targeted_legitimate_domain', 'none')
+            # Get probabilities array
+            probabilities = [1 - combined_prob, combined_prob]
             
-            if typosquatting_detected == 1:
-                techniques = features.get('typo_techniques_used', [])
-                confidence = features.get('typo_typosquatting_confidence', 0.0)
-                
-                if targeted_domain != 'none':
-                    explanation.append(f"🚨 Typosquatting detected targeting {targeted_domain}:")
-                else:
-                    explanation.append("🚨 Typosquatting detected:")
-                
-                explanation.append(f"- Confidence: {confidence:.2f}")
-                for technique in techniques[:3]:
-                    explanation.append(f"- {technique}")
-                
-                # Special warnings for high-confidence typosquatting
-                if confidence > 0.8:
-                    explanation.append("⚠️  High-confidence typosquatting - exercise extreme caution")
+            # Prepare final result
+            total_time = round(time.time() - start_time, 2)
             
-            if homoglyph_detected == 1:
-                homoglyph_count = features.get('typo_homoglyph_count', 0)
-                homoglyph_details = features.get('typo_homoglyph_details', [])
-                explanation.append(f"🔤 Homoglyph characters detected: {homoglyph_count}")
-                for detail in homoglyph_details[:2]:
-                    explanation.append(f"- {detail}")
-            
-            # Add positive factors
-            for factor in positive_factors:
-                explanation.append(f"✅ {factor}")
-            
-            # Add rule-based findings
-            rules_triggered = rule_result.get('rules_triggered', [])
-            if rules_triggered:
-                explanation.append("Rule-based findings:")
-                for rule in rules_triggered[:4]:
-                    explanation.append(f"- {rule}")
-            
-            # Final summary based on risk level
-            if risk_score < 0.3:
-                explanation.append("🟢 LOW RISK: This URL appears relatively safe")
-            elif risk_score < 0.7:
-                explanation.append("🟡 MEDIUM RISK: Exercise caution with this URL")
-            else:
-                explanation.append("🔴 HIGH RISK: This URL shows strong phishing indicators")
-            
-            return explanation
-
-    def categorize_features(self, features):
-            """Organize features into categories"""
-            categorized = {
-                "model_features": {},
-                "ssl_features": {},
-                "dns_features": {},
-                "header_features": {},
-                "meta_features": {},
-                "typosquatting_features": {}
+            result = {
+                "url": url,
+                "timestamp": datetime.now().isoformat(),
+                "prediction": status_text,
+                "predicted_class": 0 if not is_phishing else 1,
+                "risk_score": round(combined_prob, 4),
+                "probabilities": [round(prob, 6) for prob in probabilities],
+                "explanation": explanation,
+                "features": categorized_features
             }
             
-            for feature_name, value in features.items():
-                if feature_name.startswith('url_'):
-                    clean_name = feature_name[4:]
-                    categorized["model_features"][clean_name] = value
-                elif feature_name.startswith('ssl_'):
-                    clean_name = feature_name[4:]
-                    categorized["ssl_features"][clean_name] = value
-                elif feature_name.startswith('dns_'):
-                    clean_name = feature_name[4:]
-                    categorized["dns_features"][clean_name] = value
-                elif feature_name.startswith('header_'):
-                    clean_name = feature_name[7:]
-                    categorized["header_features"][clean_name] = value
-                elif feature_name.startswith('meta_'):
-                    clean_name = feature_name[5:]
-                    categorized["meta_features"][clean_name] = value
-                elif feature_name.startswith('typo_'):
-                    clean_name = feature_name[5:]
-                    categorized["typosquatting_features"][clean_name] = value
+            logging.info(f"✅ Analysis complete: {status_text} (confidence: {combined_prob:.2f}, time: {total_time}s)")
             
-            return {k: v for k, v in categorized.items() if v}
+            return result
+            
+        except Exception as e:
+            logging.error(f"❌ Analysis error for {url}: {e}")
+            return {
+                "url": url,
+                "timestamp": datetime.now().isoformat(),
+                "prediction": "Error",
+                "predicted_class": None,
+                "risk_score": 0.0,
+                "probabilities": [1.0, 0.0],
+                "explanation": [f"Analysis failed: {str(e)}"],
+                "features": {},
+                "error": f"Analysis failed: {str(e)}"
+            }
 
+    def generate_explanation(self, risk_score, prediction, features, rule_result, url):
+        """Generate human-readable explanation of the analysis"""
+        explanation = []
+        
+        # Risk score and prediction
+        explanation.append(f"Risk Score: {risk_score:.2f}")
+        explanation.append(f"Prediction: {prediction}")
+        explanation.append("Key factors influencing prediction:")
+        
+        # Positive factors (safe indicators)
+        positive_factors = []
+        
+        # SSL factors
+        if features.get('ssl_has_ssl', 0) == 1:
+            if features.get('ssl_ssl_cert_expired', 0) == 0:
+                positive_factors.append("Valid SSL certificate")
+            else:
+                explanation.append("- Expired SSL certificate (suspicious)")
+        
+        # DNS factors
+        if features.get('dns_has_dns_record', 0) == 1:
+            positive_factors.append("DNS record exists")
+        else:
+            explanation.append("- No DNS record found (suspicious)")
+        
+        # Domain age
+        domain_age = features.get('meta_domain_age_days', 0)
+        if domain_age > 365:
+            positive_factors.append(f"Established domain ({domain_age} days old)")
+        elif domain_age > 0:
+            explanation.append(f"- Relatively new domain ({domain_age} days)")
+        
+        # Security headers
+        if features.get('header_has_x_frame_options', 0) == 1:
+            positive_factors.append("Security headers present")
+        else:
+            explanation.append("- Missing security headers")
+        
+        # URL structure
+        url_len = len(features.get('url_url', ''))
+        if url_len < 100:
+            positive_factors.append("Reasonable URL length")
+        else:
+            explanation.append(f"- Long URL ({url_len} characters)")
+        
+        # Enhanced Typosquatting findings
+        typosquatting_detected = features.get('typo_typosquatting_detected', 0)
+        homoglyph_detected = features.get('typo_homoglyph_detected', 0)
+        targeted_domain = features.get('typo_targeted_legitimate_domain', 'none')
+        
+        if typosquatting_detected == 1:
+            techniques = features.get('typo_techniques_used', [])
+            confidence = features.get('typo_typosquatting_confidence', 0.0)
+            
+            if targeted_domain != 'none':
+                explanation.append(f"🚨 Typosquatting detected targeting {targeted_domain}:")
+            else:
+                explanation.append("🚨 Typosquatting detected:")
+            
+            explanation.append(f"- Confidence: {confidence:.2f}")
+            for technique in techniques[:3]:
+                explanation.append(f"- {technique}")
+            
+            # Special warnings for high-confidence typosquatting
+            if confidence > 0.8:
+                explanation.append("⚠️  High-confidence typosquatting - exercise extreme caution")
+        
+        if homoglyph_detected == 1:
+            homoglyph_count = features.get('typo_homoglyph_count', 0)
+            homoglyph_details = features.get('typo_homoglyph_details', [])
+            explanation.append(f"🔤 Homoglyph characters detected: {homoglyph_count}")
+            for detail in homoglyph_details[:2]:
+                explanation.append(f"- {detail}")
+        
+        # Add positive factors
+        for factor in positive_factors:
+            explanation.append(f"✅ {factor}")
+        
+        # Add rule-based findings
+        rules_triggered = rule_result.get('rules_triggered', [])
+        if rules_triggered:
+            explanation.append("Rule-based findings:")
+            for rule in rules_triggered[:4]:
+                explanation.append(f"- {rule}")
+        
+        # Final summary based on risk level
+        if risk_score < 0.3:
+            explanation.append("🟢 LOW RISK: This URL appears relatively safe")
+        elif risk_score < 0.7:
+            explanation.append("🟡 MEDIUM RISK: Exercise caution with this URL")
+        else:
+            explanation.append("🔴 HIGH RISK: This URL shows strong phishing indicators")
+        
+        return explanation
+
+    def categorize_features(self, features):
+        """Organize features into categories"""
+        categorized = {
+            "model_features": {},
+            "ssl_features": {},
+            "dns_features": {},
+            "header_features": {},
+            "meta_features": {},
+            "typosquatting_features": {}
+        }
+        
+        for feature_name, value in features.items():
+            if feature_name.startswith('url_'):
+                clean_name = feature_name[4:]
+                categorized["model_features"][clean_name] = value
+            elif feature_name.startswith('ssl_'):
+                clean_name = feature_name[4:]
+                categorized["ssl_features"][clean_name] = value
+            elif feature_name.startswith('dns_'):
+                clean_name = feature_name[4:]
+                categorized["dns_features"][clean_name] = value
+            elif feature_name.startswith('header_'):
+                clean_name = feature_name[7:]
+                categorized["header_features"][clean_name] = value
+            elif feature_name.startswith('meta_'):
+                clean_name = feature_name[5:]
+                categorized["meta_features"][clean_name] = value
+            elif feature_name.startswith('typo_'):
+                clean_name = feature_name[5:]
+                categorized["typosquatting_features"][clean_name] = value
+        
+        return {k: v for k, v in categorized.items() if v}
 
 
 def load_models():
@@ -935,4 +961,3 @@ if __name__ == "__main__":
         )
     else:
         print("❌ Failed to load models - cannot start server")
-        

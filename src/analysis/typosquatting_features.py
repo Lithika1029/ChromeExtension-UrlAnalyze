@@ -1,232 +1,176 @@
 # analysis/typosquatting_features.py
-import re
 import tldextract
 from difflib import SequenceMatcher
+import re
 import logging
-from urllib.parse import urlparse
 
-# Popular legitimate domains that are commonly targeted
-POPULAR_DOMAINS = {
-    'google.com', 'facebook.com', 'amazon.com', 'apple.com', 'microsoft.com',
-    'netflix.com', 'twitter.com', 'instagram.com', 'linkedin.com', 'paypal.com',
-    'ebay.com', 'github.com', 'stackoverflow.com', 'reddit.com', 'whatsapp.com',
-    'tiktok.com', 'spotify.com', 'discord.com', 'zoom.us', 'slack.com',
-    'dropbox.com', 'airbnb.com', 'uber.com', 'lyft.com', 'coinbase.com',
-    'binance.com', 'wellsfargo.com', 'bankofamerica.com', 'chase.com',
-    'citibank.com', 'capitalone.com', 'americanexpress.com', 'visa.com',
-    'mastercard.com', 'outlook.com', 'gmail.com', 'yahoo.com', 'hotmail.com',
-    'protonmail.com', 'icloud.com', 'aol.com', 'zoho.com', 'youtube.com',
-    'twitch.tv', 'vimeo.com', 'dailymotion.com', 'wordpress.com', 'medium.com',
-    'quora.com', 'pinterest.com', 'tumblr.com', 'flickr.com', 'imgur.com',
-    'wikipedia.org', 'imdb.com', 'craigslist.org', 'booking.com', 'expedia.com',
-    'tripadvisor.com', 'yelp.com', 'walmart.com', 'target.com', 'bestbuy.com',
-    'homedepot.com', 'lowes.com', 'costco.com', 'kohls.com', 'macys.com',
-    'nordstrom.com', 'sears.com', 'jcpenney.com', 'gap.com', 'oldnavy.com'
-}
-
-# Common homoglyph substitutions
-HOMOGLYPHS = {
-    'a': ['а', 'ɑ', 'α', 'а'],  # Cyrillic, Greek, etc.
-    'b': ['Ь', 'ḅ', 'ḇ', 'ƅ'],
-    'c': ['с', 'ϲ', 'ç', 'ć', 'ĉ'],  # Cyrillic, Greek
-    'd': ['ԁ', 'ḋ', 'đ', 'ɗ'],
-    'e': ['е', 'ё', 'ë', 'ē', 'ė', 'ę'],  # Cyrillic
-    'g': ['ġ', 'ğ', 'ĝ', 'ǥ'],
-    'h': ['һ', 'ḥ', 'ḫ', 'ĥ'],
-    'i': ['і', 'ï', 'ī', 'į', 'ɨ'],  # Cyrillic
-    'j': ['ј', 'ј', 'ĵ'],  # Cyrillic
-    'k': ['κ', 'ķ', 'ǩ'],
-    'l': ['ӏ', 'ḷ', 'ļ', 'ł'],
-    'm': ['ṃ', 'ɱ'],
-    'n': ['ń', 'ņ', 'ň', 'ŋ'],
-    'o': ['о', 'ο', 'ō', 'ő', 'ơ'],  # Cyrillic, Greek
-    'p': ['р', 'ṗ', 'ƥ'],  # Cyrillic
-    'q': ['ԛ', 'ɋ'],
-    'r': ['г', 'ṛ', 'ŕ', 'ř'],  # Cyrillic
-    's': ['ѕ', 'ś', 'ŝ', 'ş'],  # Cyrillic
-    'u': ['μ', 'ū', 'ŭ', 'ů', 'ű'],
-    'v': ['ν', 'ѵ', 'ṽ'],
-    'w': ['ω', 'ẁ', 'ẃ', 'ŵ'],
-    'x': ['х', 'ҳ', 'ẍ'],  # Cyrillic
-    'y': ['у', 'ý', 'ŷ', 'ÿ'],  # Cyrillic
-    'z': ['ź', 'ż', 'ž', 'ƶ']
-}
-
-# Common typosquatting techniques
-COMMON_TYPOS = {
-    'additions': ['-login', '-secure', '-account', '-verify', '-update', '-signin', '-auth', '-bank', '-pay', '-service', '-portal', '-support', '-help', '-info', '-user', '-online', '-web', '-admin', '-access', '-check'],
-    'replacements': [
-        ('o', '0'), ('i', '1'), ('l', '1'), ('s', '5'), ('e', '3'),
-        ('a', '4'), ('t', '7'), ('g', '9'), ('b', '8'), ('c', '('), ('d', 'cl'), ('m', 'nn'),
-        ('u', 'v'), ('r', 'Я'), ('n', 'И'), ('y', '¥'), ('k', 'κ'), ('h', 'н'), ('f', 'ƒ'), ('p', 'ρ'), ('x', 'χ'), ('z', '2')
-    ],
-    'omissions': [  # Common character omissions
-        'facebok', 'googel', 'yutube', 'paypall', 'amazoon', 'micorsoft', 'twiter', 'instgram', 'linkdin', 'whatsap',
-        'netflik', 'spofity', 'discor', 'slak', 'tumbl', 'reddt', 'gitub', 'youtub', 'pintrst', 'vime',
-        'dailymotin', 'wpres', 'medum', 'qora', 'flickr', 'imgur', 'wikpedia', 'imdbb', 'craigslist', 'bookingg',
-        'expediaa', 'tripadvisr', 'yelp', 'walmrt', 'targt', 'bestbuyy', 'homedepott', 'lowess', 'costcoo', 'kohls', 'macys',
-        'nordstrm', 'sears', 'jcpeny', 'gap', 'oldnavy', 'slcak'
-    ],
-    'transpositions': [  # Common transpositions
-        'googel', 'facebok', 'yaho', 'ebya', 'amzon', 'twitte', 'instagarm', 'linkdein', 'paypl', 'amazno', 'facbook', 'micorsoft',
-        'netfli', 'spofity', 'disocrd', 'slakc', 'tumblr', 'reddiit', 'gitbub', 'youtbue', 'pintrset', 'vimo', 'dailymotio', 'wpres',
-        'medim', 'quora', 'flicrk', 'imurg', 'wikipeida', 'imdb', 'craigsist', 'bookng', 'expedia', 'tripadviosr', 'yelp', 'walmat',
-        'targe', 'bestbuiy', 'homdepot', 'lows', 'costco', 'kohls', 'macys', 'nordstom'
-    ]
-}
-
-
-def similarity_ratio(a, b):
-    """Calculate similarity ratio between two strings"""
-    return SequenceMatcher(None, a.lower(), b.lower()).ratio()
-
-
-def contains_homoglyphs(domain):
-    """Check if domain contains homoglyph characters"""
-    homoglyph_count = 0
-    suspicious_chars = []
+def is_legitimate_subdomain(domain):
+    """
+    Check if domain is a legitimate subdomain of a popular domain
+    """
+    LEGITIMATE_SUBDOMAINS = {
+        'google': ['support', 'docs', 'drive', 'mail', 'maps', 'play', 'news', 'photos', 'accounts', 'myaccount', 'chrome', 'firebase', 'cloud'],
+        'facebook': ['business', 'developers', 'about', 'help', 'newsroom'],
+        'amazon': ['aws', 'kindle', 'prime', 'fresh', 'sellercentral', 'advertising'],
+        'microsoft': ['support', 'docs', 'learn', 'azure', 'technet', 'msdn'],
+        'github': ['gist', 'help', 'education', 'enterprise'],
+        'paypal': ['developer', 'business', 'manager'],
+        'apple': ['support', 'developer', 'apps', 'books'],
+        'youtube': ['studio', 'tv', 'kids'],
+        'twitter': ['developer', 'business'],
+        'instagram': ['developer', 'business'],
+        'linkedin': ['learning', 'business', 'developer']
+    }
     
-    for char in domain:
-        for original, substitutes in HOMOGLYPHS.items():
-            if char in substitutes:
-                homoglyph_count += 1
-                suspicious_chars.append((char, original))
-                break
+    extracted = tldextract.extract(domain)
+    main_domain = extracted.domain.lower()
+    subdomain_parts = extracted.subdomain.lower().split('.') if extracted.subdomain else []
     
-    return homoglyph_count > 0, homoglyph_count, suspicious_chars
-
-
-def detect_typosquatting(domain):
-    """Detect various typosquatting techniques"""
-    techniques_found = []
-    confidence = 0.0
-    
-    # Check against popular domains
-    for popular_domain in POPULAR_DOMAINS:
-        similarity = similarity_ratio(domain, popular_domain)
+    if main_domain in LEGITIMATE_SUBDOMAINS:
+        # If no subdomain, it's the main domain - legitimate
+        if not extracted.subdomain:
+            return True
         
-        # High similarity but not exact match
-        if 0.7 <= similarity < 0.95:
-            techniques_found.append(f"Similar to '{popular_domain}' (similarity: {similarity:.2f})")
-            confidence = max(confidence, similarity)
+        # Check if any subdomain part is in legitimate list
+        for part in subdomain_parts:
+            if part in LEGITIMATE_SUBDOMAINS[main_domain]:
+                return True
     
-    # Check for character replacements (like o→0, i→1, etc.)
-    for original, replacement in COMMON_TYPOS['replacements']:
-        if replacement in domain and original not in domain:
-            # Only flag if this makes it similar to a popular domain
-            for popular_domain in POPULAR_DOMAINS:
-                if original in popular_domain and replacement in domain:
-                    techniques_found.append(f"Character replacement: '{replacement}' for '{original}' (mimicking '{popular_domain}')")
-                    confidence = max(confidence, 0.8)
-                    break
-    
-    # Check for common typos in popular domains
-    domain_lower = domain.lower()
-    for popular_domain in POPULAR_DOMAINS:
-        popular_lower = popular_domain.lower()
-        
-        # Check for transpositions (google → googel)
-        if len(domain_lower) == len(popular_lower):
-            differences = sum(1 for a, b in zip(domain_lower, popular_lower) if a != b)
-            if differences == 1 and similarity_ratio(domain_lower, popular_lower) > 0.8:
-                techniques_found.append(f"Single character transposition of '{popular_domain}'")
-                confidence = max(confidence, 0.9)
-        
-        # Check for omissions (facebook → facebok)
-        if popular_lower in domain_lower and domain_lower != popular_lower:
-            techniques_found.append(f"Contains but modifies '{popular_domain}'")
-            confidence = max(confidence, 0.7)
-    
-    # Check for added words
-    for addition in COMMON_TYPOS['additions']:
-        if addition in domain:
-            techniques_found.append(f"Suspicious word addition: '{addition}'")
-            confidence = max(confidence, 0.6)
-    
-    return techniques_found, confidence
+    return False
 
-
-def extract_typosquatting_features(url):
-    """Extract typosquatting and homoglyph features from URL"""
+def improved_typosquatting_detection(url):
+    """
+    Improved typosquatting detection that avoids false positives
+    """
     try:
-        # Extract domain
-        parsed = urlparse(url)
-        domain = parsed.netloc.lower()
+        extracted = tldextract.extract(url)
+        domain_name = extracted.domain.lower()
+        full_domain = f"{extracted.domain}.{extracted.suffix}".lower()
         
-        # Remove www. if present
-        if domain.startswith('www.'):
-            domain = domain[4:]
+        # Skip legitimate domains and subdomains
+        if is_legitimate_subdomain(full_domain):
+            return {
+                'typosquatting_detected': 0,
+                'typosquatting_confidence': 0.0,
+                'targeted_legitimate_domain': 'none',
+                'suspicious_similarity': 0.0,
+                'techniques_used': [],
+                'homoglyph_detected': 0,
+                'homoglyph_count': 0,
+                'homoglyph_details': [],
+                'unusual_domain_length': 0,
+                'domain_length': len(domain_name),
+                'avg_popular_domain_length': 6.2,
+                'reason': 'Legitimate subdomain of popular domain'
+            }
         
-        # Extract domain without TLD for analysis
-        ext = tldextract.extract(url)
-        domain_name = ext.domain
-        full_domain = f"{ext.domain}.{ext.suffix}"
+        # List of popular domains to check against
+        POPULAR_DOMAINS = [
+            'google', 'facebook', 'amazon', 'apple', 'microsoft', 'netflix',
+            'twitter', 'instagram', 'linkedin', 'youtube', 'whatsapp', 'tiktok',
+            'paypal', 'ebay', 'wikipedia', 'github', 'reddit', 'discord',
+            'spotify', 'zoom', 'slack', 'dropbox', 'airbnb', 'uber'
+        ]
         
-        features = {
-            'typosquatting_detected': 0,
-            'typosquatting_confidence': 0.0,
-            'homoglyph_detected': 0,
-            'homoglyph_count': 0,
-            'suspicious_similarity': 0.0,
-            'techniques_used': [],
-            'homoglyph_details': [],
-            'targeted_legitimate_domain': 'none'
-        }
+        best_similarity = 0.0
+        best_match = None
+        techniques_used = []
+        
+        for popular_domain in POPULAR_DOMAINS:
+            similarity = SequenceMatcher(None, domain_name, popular_domain).ratio()
+            
+            if similarity > best_similarity:
+                best_similarity = similarity
+                best_match = popular_domain
+        
+        # Only consider it typosquatting if similarity is high but not exact
+        # and it's not a legitimate subdomain
+        is_typosquatting = (0.7 <= best_similarity < 0.95) and domain_name != best_match
+        
+        if is_typosquatting:
+            # Analyze techniques used
+            if len(domain_name) > len(best_match) + 2:
+                techniques_used.append("Character addition")
+            elif len(domain_name) < len(best_match) - 2:
+                techniques_used.append("Character omission")
+            
+            # Check for character replacements
+            common_replacements = [
+                ('o', '0'), ('i', '1'), ('l', '1'), ('s', '5'), ('e', '3'),
+                ('a', '4'), ('t', '7'), ('g', '9')
+            ]
+            
+            for original, replacement in common_replacements:
+                if replacement in domain_name and original not in domain_name:
+                    if any(original in popular for popular in POPULAR_DOMAINS):
+                        techniques_used.append(f"Character replacement: '{replacement}' for '{original}'")
+                        break
+            
+            # Check for transpositions
+            if len(domain_name) == len(best_match):
+                diff_count = sum(1 for a, b in zip(domain_name, best_match) if a != b)
+                if diff_count <= 2:
+                    techniques_used.append("Character transposition")
         
         # Homoglyph detection
-        homoglyph_detected, homoglyph_count, suspicious_chars = contains_homoglyphs(domain)
+        homoglyph_patterns = [
+            (r'[асԁеһіјӏорԗѕԝху]', 'cyrillic'),  # Cyrillic homoglyphs
+            (r'[𝐚𝐛𝐜𝐝𝐞𝐟𝐠𝐡𝐢𝐣𝐤𝐥𝐦𝐧𝐨𝐩𝐪𝐫𝐬𝐭𝐮𝐯𝐰𝐱𝐲𝐳]', 'bold'),
+            (r'[𝒂𝒃𝒄𝒅𝒆𝒇𝒈𝒉𝒊𝒋𝒌𝒍𝒎𝒏𝒐𝒑𝒒𝒓𝒔𝒕𝒖𝒗𝒘𝒙𝒚𝒛]', 'italic'),
+            (r'[𝗮𝗯𝗰𝗱𝗲𝗳𝗴𝗵𝗶𝗷𝗸𝗹𝗺𝗻𝗼𝗽𝗾𝗿𝘀𝘁𝘂𝘃𝘄𝘅𝘆𝘇]', 'sans'),
+        ]
         
-        if homoglyph_detected:
-            features['homoglyph_detected'] = 1
-            features['homoglyph_count'] = homoglyph_count
-            features['homoglyph_details'] = [f"{char}->{original}" for char, original in suspicious_chars]
+        homoglyph_detected = 0
+        homoglyph_count = 0
+        homoglyph_details = []
         
-        # Typosquatting detection
-        techniques, confidence = detect_typosquatting(full_domain)
+        for pattern, glyph_type in homoglyph_patterns:
+            matches = re.findall(pattern, domain_name)
+            if matches:
+                homoglyph_detected = 1
+                homoglyph_count += len(matches)
+                homoglyph_details.append(f"{len(matches)} {glyph_type} homoglyph(s) found")
         
-        if techniques:
-            features['typosquatting_detected'] = 1
-            features['typosquatting_confidence'] = confidence
-            features['techniques_used'] = techniques
-            
-            # Calculate similarity to closest popular domain
-            max_similarity = 0.0
-            closest_domain = ""
-            
-            for popular_domain in POPULAR_DOMAINS:
-                similarity = similarity_ratio(full_domain, popular_domain)
-                if similarity > max_similarity:
-                    max_similarity = similarity
-                    closest_domain = popular_domain
-            
-            features['suspicious_similarity'] = max_similarity
-            features['targeted_legitimate_domain'] = closest_domain
+        # Domain length analysis
+        avg_popular_length = 6.2  # Average length of popular domains
+        unusual_length = 1 if abs(len(domain_name) - avg_popular_length) > 3 else 0
         
-        # Additional heuristic: domain length vs popular domains
-        avg_popular_length = sum(len(d) for d in POPULAR_DOMAINS) / len(POPULAR_DOMAINS)
-        length_diff = abs(len(full_domain) - avg_popular_length)
+        confidence = min(best_similarity * 1.2, 1.0) if is_typosquatting else 0.0
         
-        if length_diff > 10:  # Unusually long or short
-            features['unusual_domain_length'] = 1
-        else:
-            features['unusual_domain_length'] = 0
-        
-        features['domain_length'] = len(full_domain)
-        features['avg_popular_domain_length'] = avg_popular_length
-        
-        logging.debug(f"✅ Typosquatting features extracted for {domain}")
-        return features
+        return {
+            'typosquatting_detected': 1 if is_typosquatting else 0,
+            'typosquatting_confidence': round(confidence, 4),
+            'targeted_legitimate_domain': best_match if is_typosquatting else 'none',
+            'suspicious_similarity': round(best_similarity, 4),
+            'techniques_used': techniques_used,
+            'homoglyph_detected': homoglyph_detected,
+            'homoglyph_count': homoglyph_count,
+            'homoglyph_details': homoglyph_details,
+            'unusual_domain_length': unusual_length,
+            'domain_length': len(domain_name),
+            'avg_popular_domain_length': avg_popular_length,
+            'reason': 'Typosquatting detected' if is_typosquatting else 'No significant similarity'
+        }
         
     except Exception as e:
-        logging.error(f"❌ Typosquatting analysis error for {url}: {e}")
+        logging.error(f"Typosquatting detection error: {e}")
         return {
             'typosquatting_detected': 0,
             'typosquatting_confidence': 0.0,
-            'homoglyph_detected': 0,
-            'homoglyph_count': 0,
+            'targeted_legitimate_domain': 'none',
             'suspicious_similarity': 0.0,
             'techniques_used': [],
+            'homoglyph_detected': 0,
+            'homoglyph_count': 0,
             'homoglyph_details': [],
-            'targeted_legitimate_domain': 'none',
-            'error': str(e)
+            'unusual_domain_length': 0,
+            'domain_length': 0,
+            'avg_popular_domain_length': 6.2,
+            'reason': f'Error: {str(e)}'
         }
+
+def extract_typosquatting_features(url):
+    """
+    Extract typosquatting features for the main analysis
+    """
+    return improved_typosquatting_detection(url)
