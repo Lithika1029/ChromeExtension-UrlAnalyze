@@ -136,7 +136,7 @@ class AdvancedPhishingDetector:
                 module_status['metadata_analysis'] = f'error: {str(e)}'
                 extraction_times['metadata_analysis'] = 0
         
-        # Typosquatting Features
+        # Typosquatting Features - USE THE IMPROVED VERSION
         if self.analysis_modules.get('typosquatting', {}).get('enabled', False):
             start_time = time.time()
             try:
@@ -144,7 +144,13 @@ class AdvancedPhishingDetector:
                 features.update({f'typo_{k}': v for k, v in typosquatting_features.items()})
                 module_status['typosquatting_analysis'] = 'success'
                 extraction_times['typosquatting_analysis'] = round(time.time() - start_time, 4)
-                logging.debug("✅ Typosquatting features extracted")
+                
+                # Log typosquatting results for debugging
+                if typosquatting_features.get('typosquatting_detected', 0) == 1:
+                    logging.info(f"🔍 Typosquatting detected: {typosquatting_features.get('targeted_legitimate_domain')} - {typosquatting_features.get('reason')}")
+                else:
+                    logging.debug(f"🔍 No typosquatting detected: {typosquatting_features.get('reason')}")
+                    
             except Exception as e:
                 logging.error(f"❌ Typosquatting analysis error: {e}")
                 module_status['typosquatting_analysis'] = f'error: {str(e)}'
@@ -152,42 +158,8 @@ class AdvancedPhishingDetector:
         
         return features, module_status, extraction_times
 
-    def is_legitimate_subdomain(self, domain):
-        """
-        Check if domain is a legitimate subdomain of a popular domain
-        """
-        LEGITIMATE_SUBDOMAINS = {
-            'google': ['support', 'docs', 'drive', 'mail', 'maps', 'play', 'news', 'photos', 'accounts', 'myaccount', 'chrome', 'firebase', 'cloud'],
-            'facebook': ['business', 'developers', 'about', 'help', 'newsroom'],
-            'amazon': ['aws', 'kindle', 'prime', 'fresh', 'sellercentral', 'advertising'],
-            'microsoft': ['support', 'docs', 'learn', 'azure', 'technet', 'msdn'],
-            'github': ['gist', 'help', 'education', 'enterprise'],
-            'paypal': ['developer', 'business', 'manager'],
-            'apple': ['support', 'developer', 'apps', 'books'],
-            'youtube': ['studio', 'tv', 'kids'],
-            'twitter': ['developer', 'business'],
-            'instagram': ['developer', 'business'],
-            'linkedin': ['learning', 'business', 'developer']
-        }
-        
-        extracted = tldextract.extract(domain)
-        main_domain = extracted.domain.lower()
-        subdomain_parts = extracted.subdomain.lower().split('.') if extracted.subdomain else []
-        
-        if main_domain in LEGITIMATE_SUBDOMAINS:
-            # If no subdomain, it's the main domain - legitimate
-            if not extracted.subdomain:
-                return True
-            
-            # Check if any subdomain part is in legitimate list
-            for part in subdomain_parts:
-                if part in LEGITIMATE_SUBDOMAINS[main_domain]:
-                    return True
-        
-        return False
-    
     def rule_based_analysis(self, url, features):
-        """Enhanced rule-based analysis with improved typosquatting detection"""
+        """Enhanced rule-based analysis with CONSERVATIVE typosquatting detection"""
         score = 0.0
         rules_triggered = []
         rule_details = []
@@ -213,14 +185,14 @@ class AdvancedPhishingDetector:
             'many_name_servers_low': 25,
             'privacy_whois': 10,
             'server_header_full': 2,
-            # Typosquatting weights - adjusted to be more conservative
-            'homoglyph_detected': 25,
-            'typosquatting_detected': 35,  # Reduced from 45
-            'high_similarity': 15,  # Reduced from 20
-            'unusual_length': 8,   # Reduced from 10
-            'character_replacement': 20,  # Reduced from 25
-            'addition_technique': 12,  # Reduced from 15
-            'omission_technique': 15   # Reduced from 20
+            # CONSERVATIVE Typosquatting weights - only apply when confident
+            'homoglyph_detected': 20,    # Reduced
+            'typosquatting_detected': 25, # Reduced significantly
+            'high_similarity': 10,       # Reduced
+            'unusual_length': 5,         # Reduced
+            'character_replacement': 15,  # Reduced
+            'addition_technique': 8,     # Reduced
+            'omission_technique': 10     # Reduced
         }
 
         # Helper functions
@@ -336,7 +308,6 @@ class AdvancedPhishingDetector:
                     return True, kw
             return False, None
 
-        # ADD THIS MISSING HELPER FUNCTION
         def similarity_ratio(a, b):
             """Calculate similarity ratio between two strings"""
             from difflib import SequenceMatcher
@@ -392,11 +363,8 @@ class AdvancedPhishingDetector:
             ext = tldextract.extract(url)
             full_domain = f"{ext.domain}.{ext.suffix}"
             
-            # Check if this is a legitimate subdomain first
-            if self.is_legitimate_subdomain(f"{ext.subdomain}.{full_domain}" if ext.subdomain else full_domain):
-                # Don't penalize legitimate subdomains
-                pass
-            elif full_domain in trusted_domains:
+            # Check if this is a legitimate domain first
+            if full_domain in trusted_domains:
                 # Only apply penalty if there are suspicious patterns on trusted domains
                 parsed_url = urlparse(url)
                 path_lower = parsed_url.path.lower()
@@ -501,69 +469,62 @@ class AdvancedPhishingDetector:
             score += W['server_header_full']
             rule_details.append("Server header present (info leakage)")
 
-        # IMPROVED: Enhanced Typosquatting and Homoglyph detection
+        # IMPROVED: Conservative Typosquatting detection
+        # Trust the improved typosquatting_features.py and only apply penalties when confident
         typosquatting_detected = features.get('typo_typosquatting_detected', 0)
         homoglyph_detected = features.get('typo_homoglyph_detected', 0)
         similarity_score = features.get('typo_suspicious_similarity', 0.0)
         targeted_domain = features.get('typo_targeted_legitimate_domain', 'none')
         techniques_used = features.get('typo_techniques_used', [])
-        typosquatting_reason = features.get('typo_reason', '')
+        confidence = features.get('typosquatting_confidence', 0.0)
+        reason = features.get('typo_reason', '')
         
-        # Check if this is a legitimate subdomain before applying typosquatting penalties
-        try:
-            ext = tldextract.extract(url)
-            full_domain = f"{ext.subdomain}.{ext.domain}.{ext.suffix}" if ext.subdomain else f"{ext.domain}.{ext.suffix}"
-            is_legitimate = self.is_legitimate_subdomain(full_domain)
-        except:
-            is_legitimate = False
-        
-        # Only apply typosquatting penalties if it's NOT a legitimate subdomain
-        if not is_legitimate:
-            if homoglyph_detected == 1:
-                homoglyph_count = features.get('typo_homoglyph_count', 0)
-                score += W['homoglyph_detected']
-                rules_triggered.append("Homoglyph characters detected")
-                rule_details.append(f"Found {homoglyph_count} homoglyph characters")
-            
-            if typosquatting_detected == 1:
-                confidence = features.get('typo_typosquatting_confidence', 0.0)
+        # ONLY apply typosquatting penalties under strict conditions
+        if typosquatting_detected == 1:
+            # Require high confidence and multiple techniques
+            if confidence > 0.7 and len(techniques_used) >= 2:
                 score += W['typosquatting_detected']
                 
                 if targeted_domain != 'none':
                     rules_triggered.append(f"Typosquatting detected targeting {targeted_domain}")
-                    rule_details.append(f"Confidence: {confidence:.2f}, Techniques: {len(techniques_used)}")
+                    rule_details.append(f"High confidence: {confidence:.2f}, Techniques: {len(techniques_used)}")
                 else:
                     rules_triggered.append("Typosquatting detected")
-                    rule_details.append(f"Confidence: {confidence:.2f}")
+                    rule_details.append(f"High confidence: {confidence:.2f}")
                 
-                # Analyze specific techniques
+                # Conservative technique scoring
                 for technique in techniques_used:
                     if 'replacement' in technique.lower():
                         score += W['character_replacement']
                     elif 'addition' in technique.lower():
                         score += W['addition_technique']
-                    elif 'omission' in technique.lower() or 'transposition' in technique.lower():
+                    elif 'omission' in technique.lower():
                         score += W['omission_technique']
                 
                 # Add technique details
-                for technique in techniques_used[:3]:
+                for technique in techniques_used[:2]:  # Limit details
                     rule_details.append(f"- {technique}")
-            
-            if similarity_score > 0.7 and not is_legitimate:
-                closest_domain = features.get('typo_targeted_legitimate_domain', 'unknown')
-                score += W['high_similarity']
-                rules_triggered.append("High similarity to legitimate domain")
-                rule_details.append(f"Similarity: {similarity_score:.2f} to {closest_domain}")
-            
-            if features.get('typo_unusual_domain_length', 0) == 1 and not is_legitimate:
-                domain_len = features.get('typo_domain_length', 0)
-                avg_len = features.get('typo_avg_popular_domain_length', 0)
-                score += W['unusual_length']
-                rules_triggered.append("Unusual domain length")
-                rule_details.append(f"Domain length: {domain_len} (avg: {avg_len:.1f})")
+            else:
+                # Log but don't penalize low-confidence detections
+                logging.debug(f"Typosquatting detected but low confidence: {confidence}, techniques: {len(techniques_used)}")
+        
+        # Homoglyph detection - only penalize when multiple homoglyphs found
+        if homoglyph_detected == 1:
+            homoglyph_count = features.get('typo_homoglyph_count', 0)
+            if homoglyph_count >= 3:  # Require multiple homoglyphs
+                score += W['homoglyph_detected']
+                rules_triggered.append("Multiple homoglyph characters detected")
+                rule_details.append(f"Found {homoglyph_count} homoglyph characters")
+        
+        # Similarity penalty - only for very high similarity with techniques
+        if similarity_score > 0.85 and len(techniques_used) > 0:
+            closest_domain = features.get('typo_targeted_legitimate_domain', 'unknown')
+            score += W['high_similarity']
+            rules_triggered.append("Very high similarity to legitimate domain")
+            rule_details.append(f"Similarity: {similarity_score:.2f} to {closest_domain}")
 
         # Normalize score
-        max_score = 250.0  # Increased to account for enhanced typosquatting detection
+        max_score = 250.0
         rule_probability = min(score/max_score, 1.0)
 
         return {
@@ -703,6 +664,7 @@ class AdvancedPhishingDetector:
         typosquatting_detected = features.get('typo_typosquatting_detected', 0)
         homoglyph_detected = features.get('typo_homoglyph_detected', 0)
         targeted_domain = features.get('typo_targeted_legitimate_domain', 'none')
+        typosquatting_reason = features.get('typo_reason', '')
         
         if typosquatting_detected == 1:
             techniques = features.get('typo_techniques_used', [])
@@ -714,6 +676,7 @@ class AdvancedPhishingDetector:
                 explanation.append("🚨 Typosquatting detected:")
             
             explanation.append(f"- Confidence: {confidence:.2f}")
+            explanation.append(f"- Reason: {typosquatting_reason}")
             for technique in techniques[:3]:
                 explanation.append(f"- {technique}")
             
@@ -939,7 +902,6 @@ def handle_exception(error):
     }), 500
 
 # Make load_models available for import
-# Add this after all your code, before the if __name__ block
 def create_app():
     """Create Flask application for WSGI servers"""
     if load_models():
