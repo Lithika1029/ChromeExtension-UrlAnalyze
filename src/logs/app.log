@@ -2147,3 +2147,65 @@
 2025-09-29 21:53:58,338 - root - INFO - 🔍 Analyzing URL: https://replit.com/@namaneetha2004/ChromeExtension-UrlAnalyze (Request #2)
 2025-09-29 21:54:03,073 - root - INFO - ✅ Analysis complete: Appears Safe (confidence: 0.23, time: 4.74s)
 2025-09-29 21:54:03,074 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 21:54:03] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 22:00:18,648 - modals.model_util - INFO - 🔍 Searching in modals\saved_models
+2025-09-29 22:00:18,649 - modals.model_util - INFO - 🔍 Searching in modals
+2025-09-29 22:00:18,650 - modals.model_util - INFO - Found potential model file: modals\model_util.py
+2025-09-29 22:00:18,651 - modals.model_util - INFO - Found potential model file: modals\__pycache__\model_util.cpython-313.pyc
+2025-09-29 22:00:18,651 - modals.model_util - INFO - 🔍 Searching in models
+2025-09-29 22:00:18,652 - modals.model_util - INFO - Found model files: ['comprehensive_model', 'features', 'generic_model', 'specific_model', 'scaler']
+2025-09-29 22:00:18,652 - modals.model_util - INFO - Attempting to load from modals/saved_models/
+2025-09-29 22:00:19,571 - modals.model_util - INFO - ✅ Loaded comprehensive model with 47 features
+2025-09-29 22:00:19,571 - root - INFO - ✅ Advanced phishing detector initialized!
+2025-09-29 22:00:19,571 - __main__ - INFO - ✅ Models and detector loaded successfully!
+2025-09-29 22:00:19,573 - root - INFO - ✅ Advanced phishing detector initialized!
+2025-09-29 22:00:19,573 - __main__ - INFO - ✅ Models and detector loaded successfully!
+2025-09-29 22:00:19,589 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.33.139.157:5000
+2025-09-29 22:00:19,589 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-29 22:00:29,758 - root - INFO - 🔍 Analyzing URL: https://replit.com/@namaneetha2004/ChromeExtension-UrlAnalyze (Request #1)
+2025-09-29 22:00:36,744 - root - INFO - ✅ Analysis complete: Appears Safe (confidence: 0.23, time: 6.99s)
+2025-09-29 22:00:36,745 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 22:00:36] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 22:01:13,832 - root - INFO - 🔍 Analyzing URL: https://testsafebrowsing.appspot.com/s/phishing.html (Request #2)
+2025-09-29 22:01:29,691 - root - INFO - ✅ Analysis complete: Appears Safe (confidence: 0.35, time: 15.86s)
+2025-09-29 22:01:29,692 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 22:01:29] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 22:02:18,173 - root - INFO - 🔍 Analyzing URL: https://www.reddit.com/r/indiasocial/comments/1chjtsq/give_me_a_telegram_bot_to_download_movies_and/ (Request #3)
+2025-09-29 22:02:23,603 - root - INFO - 🔍 Analyzing URL: https://chromewebstore.google.com/ (Request #4)
+2025-09-29 22:02:27,967 - root - INFO - ✅ Analysis complete: Appears Safe (confidence: 0.29, time: 9.79s)
+2025-09-29 22:02:27,968 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 22:02:27] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 22:02:33,067 - root - INFO - ✅ Analysis complete: Safe (confidence: 0.01, time: 9.46s)
+2025-09-29 22:02:33,068 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 22:02:33] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 22:02:37,959 - root - INFO - 🔍 Analyzing URL: https://testsafebrowsing.appspot.com/ (Request #5)
+2025-09-29 22:02:39,451 - root - INFO - 🔍 Analyzing URL: https://www.sentinelone.com/cybersecurity-101/cybersecurity/hashing/ (Request #6)
+2025-09-29 22:02:46,292 - root - INFO - ✅ Analysis complete: Appears Safe (confidence: 0.35, time: 8.33s)
+2025-09-29 22:02:46,293 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 22:02:46] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 22:02:48,227 - root - INFO - ✅ Analysis complete: Safe (confidence: 0.15, time: 8.78s)
+2025-09-29 22:02:48,228 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 22:02:48] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 22:02:53,339 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 22:02:53] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 22:03:01,465 - root - INFO - 🔍 Analyzing URL: https://dev.to/ (Request #7)
+2025-09-29 22:03:08,751 - root - INFO - ✅ Analysis complete: Safe (confidence: 0.11, time: 7.29s)
+2025-09-29 22:03:08,752 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 22:03:08] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 22:04:23,330 - root - INFO - 🔍 Analyzing URL: https://mail.google.com/mail/u/0/?tab=rm&ogbl#inbox/FMfcgzQcpwsrTPVHpNQkvLQJGMwWDlCP (Request #8)
+2025-09-29 22:04:29,473 - root - INFO - 🔍 Analyzing URL: https://mail.google.com/mail/u/0/?tab=rm&ogbl#inbox (Request #9)
+2025-09-29 22:04:34,849 - root - INFO - ✅ Analysis complete: Safe (confidence: 0.01, time: 11.52s)
+2025-09-29 22:04:34,851 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 22:04:34] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 22:04:40,472 - root - INFO - ✅ Analysis complete: Safe (confidence: 0.00, time: 11.0s)
+2025-09-29 22:04:40,473 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 22:04:40] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 22:04:44,135 - root - INFO - 🔍 Analyzing URL: https://www.youtube.com/watch?v=gPpQNzQP6gE&list=RDMM4Bsc2uI_LsM&index=3 (Request #10)
+2025-09-29 22:04:52,421 - root - INFO - ✅ Analysis complete: Safe (confidence: 0.00, time: 8.29s)
+2025-09-29 22:04:52,422 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 22:04:52] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 22:04:56,151 - root - INFO - 🔍 Analyzing URL: https://chat.deepseek.com/a/chat/s/727d39bd-4ae9-4529-9cb7-f741918be5c4 (Request #11)
+2025-09-29 22:05:01,344 - root - INFO - ✅ Analysis complete: Safe (confidence: 0.03, time: 5.19s)
+2025-09-29 22:05:01,345 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 22:05:01] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 22:05:06,608 - root - INFO - 🔍 Analyzing URL: https://www.freeprivacypolicy.com/blog/chrome-apps-extensions-privacy-policy/ (Request #12)
+2025-09-29 22:05:11,611 - root - INFO - ✅ Analysis complete: Safe (confidence: 0.18, time: 5.0s)
+2025-09-29 22:05:11,612 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 22:05:11] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 22:05:17,949 - root - INFO - 🔍 Analyzing URL: https://www.linkedin.com/feed/ (Request #13)
+2025-09-29 22:05:23,362 - root - INFO - ✅ Analysis complete: Safe (confidence: 0.14, time: 5.41s)
+2025-09-29 22:05:23,363 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 22:05:23] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 22:07:33,779 - root - INFO - 🔍 Analyzing URL: https://www.youtube.com/watch?v=BBAyRBTfsOU&list=RDMM4Bsc2uI_LsM&index=3 (Request #14)
+2025-09-29 22:07:42,337 - root - INFO - ✅ Analysis complete: Safe (confidence: 0.00, time: 8.56s)
+2025-09-29 22:07:42,338 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 22:07:42] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 22:08:58,827 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 22:08:58] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 22:09:13,546 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 22:09:13] "POST /analyze HTTP/1.1" 200 -
