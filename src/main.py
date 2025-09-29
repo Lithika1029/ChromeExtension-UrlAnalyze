@@ -1,4 +1,5 @@
 # main.py
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
@@ -21,7 +22,6 @@ from analysis.header_features import extract_header_features
 from analysis.meta_features import extract_metadata_features
 from analysis.ssl_features import extract_ssl_features
 from analysis.url_features import extract_url_features
-from analysis.typosquatting_features import extract_typosquatting_features
 
 # Import model utilities
 from modals.model_util import get_model_manager
@@ -136,30 +136,10 @@ class AdvancedPhishingDetector:
                 module_status['metadata_analysis'] = f'error: {str(e)}'
                 extraction_times['metadata_analysis'] = 0
         
-        # Typosquatting Features - USE THE IMPROVED VERSION
-        if self.analysis_modules.get('typosquatting', {}).get('enabled', False):
-            start_time = time.time()
-            try:
-                typosquatting_features = extract_typosquatting_features(url)
-                features.update({f'typo_{k}': v for k, v in typosquatting_features.items()})
-                module_status['typosquatting_analysis'] = 'success'
-                extraction_times['typosquatting_analysis'] = round(time.time() - start_time, 4)
-                
-                # Log typosquatting results for debugging
-                if typosquatting_features.get('typosquatting_detected', 0) == 1:
-                    logging.info(f"🔍 Typosquatting detected: {typosquatting_features.get('targeted_legitimate_domain')} - {typosquatting_features.get('reason')}")
-                else:
-                    logging.debug(f"🔍 No typosquatting detected: {typosquatting_features.get('reason')}")
-                    
-            except Exception as e:
-                logging.error(f"❌ Typosquatting analysis error: {e}")
-                module_status['typosquatting_analysis'] = f'error: {str(e)}'
-                extraction_times['typosquatting_analysis'] = 0
-        
         return features, module_status, extraction_times
 
     def rule_based_analysis(self, url, features):
-        """Enhanced rule-based analysis with CONSERVATIVE typosquatting detection"""
+        """Enhanced rule-based analysis"""
         score = 0.0
         rules_triggered = []
         rule_details = []
@@ -171,8 +151,8 @@ class AdvancedPhishingDetector:
             'very_long_url': 15,
             'long_url': 5,
             'many_subdomains': 12,
-            'suspicious_tld': 60,
-            'suspicious_keyword': 60,
+            'suspicious_tld': 70,
+            'suspicious_keyword': 70,
             'high_entropy_domain': 15,
             'no_dns': 25,
             'slow_dns': 12,
@@ -180,19 +160,11 @@ class AdvancedPhishingDetector:
             'expired_ssl': 30,
             'new_domain_30': 30,
             'new_domain_365': 12,
-            'missing_security_headers': 45,
+            'missing_security_headers': 50,
             'excess_redirects': 10,
             'many_name_servers_low': 25,
             'privacy_whois': 10,
-            'server_header_full': 2,
-            # CONSERVATIVE Typosquatting weights - only apply when confident
-            'homoglyph_detected': 20,    # Reduced
-            'typosquatting_detected': 25, # Reduced significantly
-            'high_similarity': 10,       # Reduced
-            'unusual_length': 5,         # Reduced
-            'character_replacement': 15,  # Reduced
-            'addition_technique': 8,     # Reduced
-            'omission_technique': 10     # Reduced
+            'server_header_full': 22
         }
 
         # Helper functions
@@ -307,11 +279,6 @@ class AdvancedPhishingDetector:
                 if kw in low:
                     return True, kw
             return False, None
-
-        def similarity_ratio(a, b):
-            """Calculate similarity ratio between two strings"""
-            from difflib import SequenceMatcher
-            return SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
         # Start rules ----------------------------------------------------------
         # URL length
@@ -469,60 +436,6 @@ class AdvancedPhishingDetector:
             score += W['server_header_full']
             rule_details.append("Server header present (info leakage)")
 
-        # IMPROVED: Conservative Typosquatting detection
-        # Trust the improved typosquatting_features.py and only apply penalties when confident
-        typosquatting_detected = features.get('typo_typosquatting_detected', 0)
-        homoglyph_detected = features.get('typo_homoglyph_detected', 0)
-        similarity_score = features.get('typo_suspicious_similarity', 0.0)
-        targeted_domain = features.get('typo_targeted_legitimate_domain', 'none')
-        techniques_used = features.get('typo_techniques_used', [])
-        confidence = features.get('typosquatting_confidence', 0.0)
-        reason = features.get('typo_reason', '')
-        
-        # ONLY apply typosquatting penalties under strict conditions
-        if typosquatting_detected == 1:
-            # Require high confidence and multiple techniques
-            if confidence > 0.7 and len(techniques_used) >= 2:
-                score += W['typosquatting_detected']
-                
-                if targeted_domain != 'none':
-                    rules_triggered.append(f"Typosquatting detected targeting {targeted_domain}")
-                    rule_details.append(f"High confidence: {confidence:.2f}, Techniques: {len(techniques_used)}")
-                else:
-                    rules_triggered.append("Typosquatting detected")
-                    rule_details.append(f"High confidence: {confidence:.2f}")
-                
-                # Conservative technique scoring
-                for technique in techniques_used:
-                    if 'replacement' in technique.lower():
-                        score += W['character_replacement']
-                    elif 'addition' in technique.lower():
-                        score += W['addition_technique']
-                    elif 'omission' in technique.lower():
-                        score += W['omission_technique']
-                
-                # Add technique details
-                for technique in techniques_used[:2]:  # Limit details
-                    rule_details.append(f"- {technique}")
-            else:
-                # Log but don't penalize low-confidence detections
-                logging.debug(f"Typosquatting detected but low confidence: {confidence}, techniques: {len(techniques_used)}")
-        
-        # Homoglyph detection - only penalize when multiple homoglyphs found
-        if homoglyph_detected == 1:
-            homoglyph_count = features.get('typo_homoglyph_count', 0)
-            if homoglyph_count >= 3:  # Require multiple homoglyphs
-                score += W['homoglyph_detected']
-                rules_triggered.append("Multiple homoglyph characters detected")
-                rule_details.append(f"Found {homoglyph_count} homoglyph characters")
-        
-        # Similarity penalty - only for very high similarity with techniques
-        if similarity_score > 0.85 and len(techniques_used) > 0:
-            closest_domain = features.get('typo_targeted_legitimate_domain', 'unknown')
-            score += W['high_similarity']
-            rules_triggered.append("Very high similarity to legitimate domain")
-            rule_details.append(f"Similarity: {similarity_score:.2f} to {closest_domain}")
-
         # Normalize score
         max_score = 250.0
         rule_probability = min(score/max_score, 1.0)
@@ -660,37 +573,6 @@ class AdvancedPhishingDetector:
         else:
             explanation.append(f"- Long URL ({url_len} characters)")
         
-        # Enhanced Typosquatting findings
-        typosquatting_detected = features.get('typo_typosquatting_detected', 0)
-        homoglyph_detected = features.get('typo_homoglyph_detected', 0)
-        targeted_domain = features.get('typo_targeted_legitimate_domain', 'none')
-        typosquatting_reason = features.get('typo_reason', '')
-        
-        if typosquatting_detected == 1:
-            techniques = features.get('typo_techniques_used', [])
-            confidence = features.get('typo_typosquatting_confidence', 0.0)
-            
-            if targeted_domain != 'none':
-                explanation.append(f"🚨 Typosquatting detected targeting {targeted_domain}:")
-            else:
-                explanation.append("🚨 Typosquatting detected:")
-            
-            explanation.append(f"- Confidence: {confidence:.2f}")
-            explanation.append(f"- Reason: {typosquatting_reason}")
-            for technique in techniques[:3]:
-                explanation.append(f"- {technique}")
-            
-            # Special warnings for high-confidence typosquatting
-            if confidence > 0.8:
-                explanation.append("⚠️  High-confidence typosquatting - exercise extreme caution")
-        
-        if homoglyph_detected == 1:
-            homoglyph_count = features.get('typo_homoglyph_count', 0)
-            homoglyph_details = features.get('typo_homoglyph_details', [])
-            explanation.append(f"🔤 Homoglyph characters detected: {homoglyph_count}")
-            for detail in homoglyph_details[:2]:
-                explanation.append(f"- {detail}")
-        
         # Add positive factors
         for factor in positive_factors:
             explanation.append(f"✅ {factor}")
@@ -719,8 +601,7 @@ class AdvancedPhishingDetector:
             "ssl_features": {},
             "dns_features": {},
             "header_features": {},
-            "meta_features": {},
-            "typosquatting_features": {}
+            "meta_features": {}
         }
         
         for feature_name, value in features.items():
@@ -739,9 +620,6 @@ class AdvancedPhishingDetector:
             elif feature_name.startswith('meta_'):
                 clean_name = feature_name[5:]
                 categorized["meta_features"][clean_name] = value
-            elif feature_name.startswith('typo_'):
-                clean_name = feature_name[5:]
-                categorized["typosquatting_features"][clean_name] = value
         
         return {k: v for k, v in categorized.items() if v}
 
