@@ -2054,3 +2054,96 @@
 2025-09-28 17:02:56,315 - root - INFO - 🔍 Analyzing URL: https://testsafebrowsing.appspot.com/s/phishing.html (Request #27)
 2025-09-28 17:03:00,194 - root - INFO - ✅ Analysis complete: Suspicious (confidence: 0.50, time: 3.88s)
 2025-09-28 17:03:00,196 - werkzeug - INFO - 127.0.0.1 - - [28/Sep/2025 17:03:00] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 21:42:41,808 - modals.model_util - INFO - 🔍 Searching in modals\saved_models
+2025-09-29 21:42:41,810 - modals.model_util - INFO - 🔍 Searching in modals
+2025-09-29 21:42:41,811 - modals.model_util - INFO - Found potential model file: modals\model_util.py
+2025-09-29 21:42:41,812 - modals.model_util - INFO - Found potential model file: modals\__pycache__\model_util.cpython-313.pyc
+2025-09-29 21:42:41,812 - modals.model_util - INFO - 🔍 Searching in models
+2025-09-29 21:42:41,813 - modals.model_util - INFO - Found model files: ['comprehensive_model', 'features', 'generic_model', 'specific_model', 'scaler']
+2025-09-29 21:42:41,813 - modals.model_util - INFO - Attempting to load from modals/saved_models/
+2025-09-29 21:42:47,995 - modals.model_util - INFO - ✅ Loaded comprehensive model with 47 features
+2025-09-29 21:42:47,995 - root - INFO - ✅ Advanced phishing detector initialized!
+2025-09-29 21:42:47,996 - __main__ - INFO - ✅ Models and detector loaded successfully!
+2025-09-29 21:42:47,997 - root - INFO - ✅ Advanced phishing detector initialized!
+2025-09-29 21:42:47,997 - __main__ - INFO - ✅ Models and detector loaded successfully!
+2025-09-29 21:42:48,035 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.33.139.157:5000
+2025-09-29 21:42:48,035 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-29 21:43:29,217 - root - INFO - 🔍 Analyzing URL: https://testsafebrowsing.appspot.com/s/phishing.html (Request #1)
+2025-09-29 21:43:33,799 - root - INFO - ✅ Analysis complete: Appears Safe (confidence: 0.35, time: 4.58s)
+2025-09-29 21:43:33,800 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 21:43:33] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 21:43:57,746 - root - INFO - 🔍 Analyzing URL: https://www.reddit.com/r/indiasocial/comments/1chjtsq/give_me_a_telegram_bot_to_download_movies_and/ (Request #2)
+2025-09-29 21:44:01,458 - root - INFO - ✅ Analysis complete: Appears Safe (confidence: 0.26, time: 3.71s)
+2025-09-29 21:44:01,459 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 21:44:01] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 21:44:21,106 - root - INFO - 🔍 Analyzing URL: https://replit.com/@namaneetha2004/ChromeExtension-UrlAnalyze (Request #3)
+2025-09-29 21:44:25,218 - root - INFO - ✅ Analysis complete: Safe (confidence: 0.00, time: 4.11s)
+2025-09-29 21:44:25,219 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 21:44:25] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 21:45:14,380 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 21:45:14] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 21:48:36,227 - modals.model_util - INFO - 🔍 Searching in modals\saved_models
+2025-09-29 21:48:36,228 - modals.model_util - INFO - 🔍 Searching in modals
+2025-09-29 21:48:36,230 - modals.model_util - INFO - Found potential model file: modals\model_util.py
+2025-09-29 21:48:36,230 - modals.model_util - INFO - Found potential model file: modals\__pycache__\model_util.cpython-313.pyc
+2025-09-29 21:48:36,230 - modals.model_util - INFO - 🔍 Searching in models
+2025-09-29 21:48:36,231 - modals.model_util - INFO - Found model files: ['comprehensive_model', 'features', 'generic_model', 'specific_model', 'scaler']
+2025-09-29 21:48:36,231 - modals.model_util - INFO - Attempting to load from modals/saved_models/
+2025-09-29 21:48:37,155 - modals.model_util - INFO - ✅ Loaded comprehensive model with 47 features
+2025-09-29 21:48:37,156 - root - INFO - ✅ Advanced phishing detector initialized!
+2025-09-29 21:48:37,156 - __main__ - INFO - ✅ Models and detector loaded successfully!
+2025-09-29 21:48:37,157 - root - INFO - ✅ Advanced phishing detector initialized!
+2025-09-29 21:48:37,157 - __main__ - INFO - ✅ Models and detector loaded successfully!
+2025-09-29 21:48:37,174 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.33.139.157:5000
+2025-09-29 21:48:37,175 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-29 21:48:42,988 - root - INFO - 🔍 Analyzing URL: https://testsafebrowsing.appspot.com/s/phishing.html (Request #1)
+2025-09-29 21:48:47,544 - root - INFO - ✅ Analysis complete: Appears Safe (confidence: 0.39, time: 4.56s)
+2025-09-29 21:48:47,546 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 21:48:47] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 21:51:11,925 - modals.model_util - INFO - 🔍 Searching in modals\saved_models
+2025-09-29 21:51:11,926 - modals.model_util - INFO - 🔍 Searching in modals
+2025-09-29 21:51:11,927 - modals.model_util - INFO - Found potential model file: modals\model_util.py
+2025-09-29 21:51:11,928 - modals.model_util - INFO - Found potential model file: modals\__pycache__\model_util.cpython-313.pyc
+2025-09-29 21:51:11,928 - modals.model_util - INFO - 🔍 Searching in models
+2025-09-29 21:51:11,929 - modals.model_util - INFO - Found model files: ['comprehensive_model', 'features', 'generic_model', 'specific_model', 'scaler']
+2025-09-29 21:51:11,929 - modals.model_util - INFO - Attempting to load from modals/saved_models/
+2025-09-29 21:51:12,988 - modals.model_util - INFO - ✅ Loaded comprehensive model with 47 features
+2025-09-29 21:51:12,988 - root - INFO - ✅ Advanced phishing detector initialized!
+2025-09-29 21:51:12,988 - __main__ - INFO - ✅ Models and detector loaded successfully!
+2025-09-29 21:51:12,990 - root - INFO - ✅ Advanced phishing detector initialized!
+2025-09-29 21:51:12,990 - __main__ - INFO - ✅ Models and detector loaded successfully!
+2025-09-29 21:51:13,013 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.33.139.157:5000
+2025-09-29 21:51:13,013 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-29 21:51:23,197 - root - INFO - 🔍 Analyzing URL: https://testsafebrowsing.appspot.com/s/phishing.html (Request #1)
+2025-09-29 21:51:29,687 - root - INFO - ✅ Analysis complete: Appears Safe (confidence: 0.35, time: 6.49s)
+2025-09-29 21:51:29,688 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 21:51:29] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 21:52:10,884 - root - INFO - 🔍 Analyzing URL: https://replit.com/~ (Request #2)
+2025-09-29 21:52:15,077 - root - INFO - ✅ Analysis complete: Safe (confidence: 0.09, time: 4.19s)
+2025-09-29 21:52:15,078 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 21:52:15] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 21:52:40,036 - modals.model_util - INFO - 🔍 Searching in modals\saved_models
+2025-09-29 21:52:40,037 - modals.model_util - INFO - 🔍 Searching in modals
+2025-09-29 21:52:40,038 - modals.model_util - INFO - Found potential model file: modals\model_util.py
+2025-09-29 21:52:40,039 - modals.model_util - INFO - Found potential model file: modals\__pycache__\model_util.cpython-313.pyc
+2025-09-29 21:52:40,039 - modals.model_util - INFO - 🔍 Searching in models
+2025-09-29 21:52:40,040 - modals.model_util - INFO - Found model files: ['comprehensive_model', 'features', 'generic_model', 'specific_model', 'scaler']
+2025-09-29 21:52:40,040 - modals.model_util - INFO - Attempting to load from modals/saved_models/
+2025-09-29 21:52:40,954 - modals.model_util - INFO - ✅ Loaded comprehensive model with 47 features
+2025-09-29 21:52:40,954 - root - INFO - ✅ Advanced phishing detector initialized!
+2025-09-29 21:52:40,955 - __main__ - INFO - ✅ Models and detector loaded successfully!
+2025-09-29 21:52:40,956 - root - INFO - ✅ Advanced phishing detector initialized!
+2025-09-29 21:52:40,956 - __main__ - INFO - ✅ Models and detector loaded successfully!
+2025-09-29 21:52:40,974 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.33.139.157:5000
+2025-09-29 21:52:40,974 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-29 21:53:00,968 - root - INFO - 🔍 Analyzing URL: https://www.reddit.com/r/indiasocial/comments/1chjtsq/give_me_a_telegram_bot_to_download_movies_and/ (Request #1)
+2025-09-29 21:53:09,078 - root - INFO - ✅ Analysis complete: Appears Safe (confidence: 0.29, time: 8.11s)
+2025-09-29 21:53:09,079 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 21:53:09] "POST /analyze HTTP/1.1" 200 -
+2025-09-29 21:53:58,338 - root - INFO - 🔍 Analyzing URL: https://replit.com/@namaneetha2004/ChromeExtension-UrlAnalyze (Request #2)
+2025-09-29 21:54:03,073 - root - INFO - ✅ Analysis complete: Appears Safe (confidence: 0.23, time: 4.74s)
+2025-09-29 21:54:03,074 - werkzeug - INFO - 127.0.0.1 - - [29/Sep/2025 21:54:03] "POST /analyze HTTP/1.1" 200 -
